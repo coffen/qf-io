@@ -12,21 +12,22 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 /**
+ * 
  * <p>
- * Project Name: 火鸟IO系统
+ * Project Name: C2C商城
  * <br>
  * Description: Spel表达式解析工具
  * <br>
- * File Name: ExprUtil.java
+ * File Name: SpelExprParsor.java
  * <br>
- * Copyright: Copyright (C) 2014 All Rights Reserved.
+ * Copyright: Copyright (C) 2015 All Rights Reserved.
  * <br>
- * Company: 杭州清柳科技有限公司
+ * Company: 杭州偶尔科技有限公司
  * <br>
- * @author 李可夫
- * @create time：2014-12-09 22:41:08
+ * @author 穷奇
+ * @create time：2017年6月28日 上午9:59:31 
  * @version: v1.0
- * 
+ *
  */
 public class SpelExprParsor {
 	
