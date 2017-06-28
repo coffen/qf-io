@@ -39,8 +39,6 @@ public class SimpleCsvReader {
 	
 	private CsvReader reader;
 	
-	private int initPageSize = 1000; // 每次读取的行数
-	
 	public SimpleCsvReader(Reader r) {
 		reader = new CsvReader(r);
 		reader.setUseTextQualifier(false);
@@ -91,14 +89,19 @@ public class SimpleCsvReader {
 	}
 	
 	/**
-	 * <p>按默认设置行数读取并解析返回数据列表</p>
+	 * <p>读取单行并解析返回数据列表</p>
 	 *
 	 * <p>返回的数据按列顺序排列</p>
 	 * 
 	 * @return List<String[]> 数据列表
 	 */
-	public List<String[]> read() throws IOException {
-		return read(initPageSize);
+	public String[] read() throws IOException {
+		String[] data = null;
+		List<String[]> dataList = read(1);
+		if (dataList != null && dataList.size() > 0) {
+			data = dataList.get(0);
+		}
+		return data;
 	}
 	
 	/**
@@ -130,14 +133,19 @@ public class SimpleCsvReader {
 	}
 	
 	/**
-	 * <p>按默认设置行数读取并解析返回数据列表</p>
+	 * <p>读取单行并解析返回数据列表</p>
 	 * 
 	 * @param fields 列名按顺序排列的列表, 返回的Map数据以field属性作为Key值
 	 * 
 	 * @return List<Map<String, String>> 数据列表
 	 */
-	public List<Map<String, String>> read(List<String> fields) throws IOException {
-		return read(fields, initPageSize);
+	public Map<String, String> read(List<String> fields) throws IOException {
+		Map<String, String> map = null;
+		List<Map<String, String>> records = read(fields, 1);
+		if (records != null && records.size() > 0) {
+			map = records.get(0);
+		}
+		return map;
 	}
 	
 	/**
