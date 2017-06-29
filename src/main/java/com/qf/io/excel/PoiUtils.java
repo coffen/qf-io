@@ -69,8 +69,8 @@ public class PoiUtils {
 	 * 开始行, 结束行都是闭区间
 	 * 
 	 * @param Sheet     指定Sheet
-	 * @param startRow  开始行（行标, 比实际行数小1）
-	 * @param endRow    结束行（行标, 比实际行数小1）
+	 * @param startRow  开始行（zero-based）
+	 * @param endRow    结束行（zero-based）
 	 * 
 	 * @return int 最大列数, -1代表错误参数, 0代表Sheet中没有数据
 	 */
@@ -90,13 +90,12 @@ public class PoiUtils {
 		endRow = endRow > lastRowIndex ? lastRowIndex : endRow;
 		// 遍历行计算最大列数
 		Row row = null;
-		int lastColumnIndex = 0;
+		int lastColumnIndex = sheet.getLastRowNum() - 1;
 		for (int i = startRow; i <= endRow; i++) {
 			row = sheet.getRow(i);
 			if (row.getPhysicalNumberOfCells() == 0) {
 				continue;
 			}
-			lastColumnIndex = sheet.getLastRowNum() - 1;
 			for (int j = 0; j <= lastColumnIndex; j++) {
 				if (j > maxCols && StringUtils.isNotBlank(row.getCell(j).getStringCellValue())) {
 					maxCols = j;
@@ -112,8 +111,8 @@ public class PoiUtils {
 	 * 开始行, 结束行都是闭区间
 	 * 
 	 * @param Sheet     指定Sheet
-	 * @param startRow  开始行（行标, 比实际行数小1）
-	 * @param endRow    结束行（行标, 比实际行数小1）
+	 * @param startRow  开始行（zero-based）
+	 * @param endRow    结束行（zero-based）
 	 * 
 	 * @return int[] 格式：int[行数, 列数], null代表没有数据
 	 */
@@ -623,7 +622,8 @@ public class PoiUtils {
 		int quotient = index / 26;
         if (quotient > 0) {
             return translateColumnIndex2Name(quotient-1) + (char)((index % 26) + 65);
-        } else {
+        } 
+        else {
             return "" + (char)((index % 26) + 65);
         }
 	}

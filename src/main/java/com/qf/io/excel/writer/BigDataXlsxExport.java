@@ -88,6 +88,7 @@ public class BigDataXlsxExport {
 		File tmpXlsx = new File(TEMP_FILE_PATH + "/file_" + tmpFileName + ".xlsx");;
 		FileOutputStream os = new FileOutputStream(tmpXlsx);
 		book.write(os);
+		book.close();
 		os.close();
 		substitute(tmpXlsx, sheetFileList, sheetRefList, stream);
 		stream.close();
@@ -191,7 +192,7 @@ public class BigDataXlsxExport {
 	}
 	
 	/**
-	 * Writes spreadsheet data in a Writer. (YK: in future it may evolve in a full-featured API for streaming data in Excel)
+	 *  写入数据到XML
 	 */
 	public static class SpreadsheetWriter {
 		
@@ -212,19 +213,13 @@ public class BigDataXlsxExport {
 			_out.write("</worksheet>");
 		}
 
-		/**
-		 * Insert a new row
-		 * 
-		 * @param rownum 0-based row number
-		 */
+		// 插入新行
 		public void insertRow(int rownum) throws IOException {
 			_out.write("<row r=\"" + (rownum + 1) + "\">" + System.lineSeparator());
 			this._rownum = rownum;
 		}
 
-		/**
-		 * Insert row end marker
-		 */
+		// 插入行结束符
 		public void endRow() throws IOException {
 			_out.write("</row>" + System.lineSeparator());
 		}

@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.qf.io.excel.DataFetcher;
+import com.qf.io.excel.ExcelFileFormat;
 import com.qf.io.excel.UnsupportedExcelDataException;
 import com.qf.io.excel.writer.module.PoiELModule;
 import com.qf.io.excel.writer.module.PoiListDataModule;
@@ -39,9 +40,6 @@ public class ExcelWriter {
 	
 	private final static Logger log = LoggerFactory.getLogger(ExcelWriter.class);
 	
-	public static final int EXCEL_FORMAT_XLS = 1;
-	public static final int EXCEL_FORMAT_XLSX = 1 << 1;
-	
 	public static final int EXCEL_XLS_ROW_COUNT_MAX = 65535; // xls最大输出行数
 	public static final int EXCEL_XLS_COLUMN_COUNT_MAX = 256; // xls最大输出列数
 	
@@ -57,17 +55,18 @@ public class ExcelWriter {
 	 * @param titles  表格标题栏
 	 * @param data    数据集
 	 * @param module  导出模板
-	 * @param format  导出格式（1: xls[1997-2003]; 2: xlsx[2007+]）
+	 * @param format  导出格式（xls: 1997-2003; xlsx: 2007+）
 	 * @param stream  输出流
 	 */
-	public static void write(LinkedHashMap<String, String> titles, List<Map<String, ?>> data, String moduleName, int format, OutputStream stream) throws UnsupportedExcelDataException, FileNotFoundException, IOException {
+	public static void write(LinkedHashMap<String, String> titles, List<Map<String, ?>> data, String moduleName, ExcelFileFormat format, OutputStream stream) throws UnsupportedExcelDataException, FileNotFoundException, IOException {
 		if (titles == null || titles.size() == 0 || data == null || StringUtils.isBlank(moduleName) || stream == null) {
 			throw new UnsupportedExcelDataException(UnsupportedExcelDataException.ILLEGAL_PARAMS);
 		}
-		if ((format == EXCEL_FORMAT_XLS && titles.size() > EXCEL_XLS_COLUMN_COUNT_MAX) || (format == EXCEL_FORMAT_XLSX && titles.size() > EXCEL_XLSX_COLUMN_COUNT_MAX)) {
+		boolean isXls = format == ExcelFileFormat.XLS;
+		if ((isXls && titles.size() > EXCEL_XLS_COLUMN_COUNT_MAX) || (!isXls && titles.size() > EXCEL_XLSX_COLUMN_COUNT_MAX)) {
 			throw new UnsupportedExcelDataException(UnsupportedExcelDataException.EXCEED_COLUMN_COUNT_LIMIT_ERROR);
 		}
-		if ((format == EXCEL_FORMAT_XLS && data.size() > EXCEL_XLS_ROW_COUNT_MAX) || (format == EXCEL_FORMAT_XLSX && data.size() > EXCEL_XLSX_ROW_COUNT_MAX)) {
+		if ((isXls && data.size() > EXCEL_XLS_ROW_COUNT_MAX) || (!isXls && data.size() > EXCEL_XLSX_ROW_COUNT_MAX)) {
 			throw new UnsupportedExcelDataException(UnsupportedExcelDataException.EXCEED_ROW_COUNT_LIMIT_ERROR);
 		}
 		ListDataModule mod = getListDataModule(moduleName, format);
@@ -83,10 +82,10 @@ public class ExcelWriter {
 	 * </p>
 	 * 
 	 * @param bean    封装各项数据的Bean对象
-	 * @param format  导出格式（1: xls[1997-2003]; 2: xlsx[2007+]）
+	 * @param format  导出格式（xls: 1997-2003; xlsx: 2007+）
 	 * @param stream  输出流
 	 */
-	public static void write(Serializable bean, String moduleName, int format, OutputStream stream) throws UnsupportedExcelDataException, FileNotFoundException, IOException {
+	public static void write(Serializable bean, String moduleName, ExcelFileFormat format, OutputStream stream) throws UnsupportedExcelDataException, FileNotFoundException, IOException {
 		if (bean == null || StringUtils.isBlank(moduleName) || stream == null) {
 			throw new UnsupportedExcelDataException(UnsupportedExcelDataException.ILLEGAL_PARAMS);
 		}
@@ -115,7 +114,7 @@ public class ExcelWriter {
 	 * 
 	 * @return ListDataModule
 	 */
-	private static ListDataModule getListDataModule(String moduleName, int format) throws FileNotFoundException, IOException {
+	private static ListDataModule getListDataModule(String moduleName, ExcelFileFormat format) throws FileNotFoundException, IOException {
 		return new PoiListDataModule(moduleName, format);
 	}
 	
@@ -124,7 +123,7 @@ public class ExcelWriter {
 	 * 
 	 * @return ELModule
 	 */
-	private static ELModule getELModule(String moduleName, int format) throws FileNotFoundException, IOException {
+	private static ELModule getELModule(String moduleName, ExcelFileFormat format) throws FileNotFoundException, IOException {
 		return new PoiELModule(moduleName, format);
 	}
 	

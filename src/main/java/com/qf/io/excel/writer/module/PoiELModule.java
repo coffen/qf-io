@@ -21,6 +21,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import com.qf.io.excel.ExcelFileFormat;
 import com.qf.io.excel.PoiUtils;
 import com.qf.io.excel.writer.ELModule;
 import com.qf.io.util.SpelExprParsor;
@@ -53,7 +54,7 @@ public class PoiELModule implements ELModule {
 	private Workbook workbook;
 	
 	private String moduleName;
-	private int format;   // 1: xls; 2: xlsx
+	private ExcelFileFormat format;
 	
 	/**
 	 * 单元格int数组代表每个单元格的坐标: int[rowIndex, columnIndex]
@@ -70,9 +71,9 @@ public class PoiELModule implements ELModule {
 	 */
 	private Map<int[], int[]> regionMap;
 	
-	public PoiELModule(String moduleName, int format) throws FileNotFoundException, IOException {
+	public PoiELModule(String moduleName, ExcelFileFormat format) throws FileNotFoundException, IOException {
 		this.moduleName = moduleName;
-		this.format = format == 1 ? 1 : 2;
+		this.format = (format == ExcelFileFormat.XLS) ? ExcelFileFormat.XLS : ExcelFileFormat.XLSX;
 		
 		staticExprCells = new ArrayList<int[]>();
 		dynamicExprCells = new ArrayList<List<int[]>>();
@@ -91,7 +92,7 @@ public class PoiELModule implements ELModule {
 		return moduleName;
 	}
 	
-	public int getFormat() {
+	public ExcelFileFormat getFormat() {
 		return format;
 	}
 	
@@ -173,7 +174,7 @@ public class PoiELModule implements ELModule {
 	}
 
 	@Override
-	public void export(Serializable bean, int format, OutputStream stream) throws IOException {
+	public void export(Serializable bean, ExcelFileFormat format, OutputStream stream) throws IOException {
 		Sheet sheet = workbook.getSheetAt(0);
 		// 设置解析器
 		SpelExprParsor parsor = new SpelExprParsor();
@@ -315,15 +316,17 @@ public class PoiELModule implements ELModule {
 		String basePath = this.getClass().getResource("/").getPath();
 		if (basePath.indexOf("/") == 0 && basePath.indexOf(":") > 0) {
 			basePath = basePath.substring(1, basePath.lastIndexOf("/"));
-		} else {
+		} 
+		else {
 			basePath = basePath.substring(0, basePath.lastIndexOf("/"));
 		}
-		String modulePath = new StringBuffer(basePath).append(templateLocation).append(format == 1 ? "xls/" : "xlsx/").append(module).append(format == 1 ? ".xls" : ".xlsx").toString();
+		boolean isXls = format == ExcelFileFormat.XLS;
+		String modulePath = new StringBuffer(basePath).append(templateLocation).append(isXls ? "xls/" : "xlsx/").append(module).append(isXls ? ".xls" : ".xlsx").toString();
 		File file = new File(modulePath);
 		if (!file.exists() || !file.isFile()) {
 			throw new FileNotFoundException();
 		}
-		workbook = format == 1 ? new HSSFWorkbook(new FileInputStream(modulePath)) : new XSSFWorkbook(new FileInputStream(modulePath));
+		workbook = isXls ? new HSSFWorkbook(new FileInputStream(modulePath)) : new XSSFWorkbook(new FileInputStream(modulePath));
 	}
 
 }

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 
+import com.qf.io.excel.ExcelFileFormat;
+
 /**
  * 
  * <p>
@@ -11,7 +13,7 @@ import java.io.Serializable;
  * <br>
  * Description: 表达式语言导出模板接口
  * <br>
- * 专用于导出EL表达式的模板， 单元格中数据、图片、公式都是通过表达式语言设置
+ * 专用于导出EL表达式的模板， 单元格中数据、图片、公式均可通过表达式语言设置
  * <br>
  * File Name: ELModule.java
  * <br>
@@ -30,9 +32,9 @@ public interface ELModule extends ExportModule {
 	 * 按模板设定导出Bean对象到指定输出流
 	 * 
 	 * @param bean    封装各项数据的Bean对象
-	 * @param format  导出格式（1: xls[1997-2003]; 2: xlsx[2007+]）
+	 * @param format  导出格式（xls: 1997-2003; xlsx: 2007+）
 	 * @param stream  输出流
 	 */
-	public void export(Serializable bean, int format, OutputStream stream) throws IOException;
+	public void export(Serializable bean, ExcelFileFormat format, OutputStream stream) throws IOException;
 	
 }

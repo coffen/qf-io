@@ -19,6 +19,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import com.qf.io.excel.ExcelFileFormat;
 import com.qf.io.excel.PoiUtils;
 import com.qf.io.excel.writer.ListDataModule;
 
@@ -47,7 +48,7 @@ public class PoiListDataModule implements ListDataModule {
 	private Workbook workbook;
 	
 	private String moduleName;
-	private int format;   // 1: xls; 2: xlsx
+	private ExcelFileFormat format;
 	
 	private Short headerHeight;
 	private Short rowHeight;
@@ -55,9 +56,9 @@ public class PoiListDataModule implements ListDataModule {
 	private CellStyle headerStyle;
 	private CellStyle[][] bodyStyle;
 	
-	public PoiListDataModule(String moduleName, int format) throws FileNotFoundException, IOException {
+	public PoiListDataModule(String moduleName, ExcelFileFormat format) throws FileNotFoundException, IOException {
 		this.moduleName = moduleName;
-		this.format = format == 1 ? 1 : 2;
+		this.format = (format == ExcelFileFormat.XLS) ? ExcelFileFormat.XLS : ExcelFileFormat.XLSX;
 		
 		loadModule(moduleName);  // 加载模板
 		parse();                 // 解析模板
@@ -67,7 +68,7 @@ public class PoiListDataModule implements ListDataModule {
 		return moduleName;
 	}
 	
-	public int getFormat() {
+	public ExcelFileFormat getFormat() {
 		return format;
 	}
 	
@@ -279,15 +280,17 @@ public class PoiListDataModule implements ListDataModule {
 		String basePath = this.getClass().getResource("/").getPath();
 		if (basePath.indexOf("/") == 0 && basePath.indexOf(":") > 0) {
 			basePath = basePath.substring(1, basePath.lastIndexOf("/"));
-		} else {
+		} 
+		else {
 			basePath = basePath.substring(0, basePath.lastIndexOf("/"));
 		}
-		String modulePath = new StringBuffer(basePath).append(templateLocation).append(format == 1 ? "xls/" : "xlsx/").append(module).append(format == 1 ? ".xls" : ".xlsx").toString();
+		boolean isXls = format == ExcelFileFormat.XLS;
+		String modulePath = new StringBuffer(basePath).append(templateLocation).append(isXls ? "xls/" : "xlsx/").append(module).append(isXls ? ".xls" : ".xlsx").toString();
 		File file = new File(modulePath);
 		if (!file.exists() || !file.isFile()) {
 			throw new FileNotFoundException();
 		}
-		workbook = format == 1 ? new HSSFWorkbook(new FileInputStream(modulePath)) : new XSSFWorkbook(new FileInputStream(modulePath));
+		workbook = isXls ? new HSSFWorkbook(new FileInputStream(modulePath)) : new XSSFWorkbook(new FileInputStream(modulePath));
 	}
 
 }
