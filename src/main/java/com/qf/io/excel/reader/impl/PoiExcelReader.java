@@ -68,7 +68,10 @@ public class PoiExcelReader implements ExcelReader {
 	
 	@Override
 	public boolean hasMore() {
-		return mark.get() < maxLength;
+		if (workbook == null) {
+			return false;
+		}
+		return mark.get() <= maxLength;
 	}
 
 	@Override
@@ -83,6 +86,10 @@ public class PoiExcelReader implements ExcelReader {
 	
 	@Override
 	public List<List<Object>> read(int length) {
+		if (workbook == null) {
+			log.error("读取异常, Workbook已关闭");
+			return null;
+		}
 		if (length <= 0 || !hasMore()) {
 			return null;  // 目前不支持重复读取
 		}
@@ -119,6 +126,10 @@ public class PoiExcelReader implements ExcelReader {
 	
 	@Override
 	public List<Map<String, Object>> read(List<String> fields, int length) {
+		if (workbook == null) {
+			log.error("读取异常, Workbook已关闭");
+			return null;
+		}
 		if (fields == null || fields.size() == 0 || length <= 0 || !hasMore()) {
 			log.error("ExcelReader.read@param[fields]不能为空!");
 			return null;
@@ -151,6 +162,19 @@ public class PoiExcelReader implements ExcelReader {
 			records.add(tmp);
 		}
 		return records;
+	}
+	
+	@Override
+	public void close() {
+		try {
+			workbook.close();
+		}
+		catch (Exception e) {
+			log.error("关闭workbook异常");
+		}
+		finally {
+			workbook = null;
+		}
 	}
 
 }

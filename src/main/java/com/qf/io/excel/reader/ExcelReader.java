@@ -72,4 +72,9 @@ public interface ExcelReader {
 	 */
 	public List<Map<String, Object>> read(List<String> fields, int length);
 	
+	/**
+	 * 关闭Reader
+	 */
+	public void close();
+	
 }
