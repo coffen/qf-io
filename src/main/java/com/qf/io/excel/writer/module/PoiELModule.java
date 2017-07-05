@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,15 +47,13 @@ import com.qf.io.util.SpelExprParsor;
  */
 public class PoiELModule implements ELModule {
 	
-	private static final String templateLocation = "/template/output/";  // 模板存放位置
-	
 	private static final Pattern valueRegePattern = Pattern.compile("\\$\\{\\w+(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*(\\.\\w+\\[\\?\\])?(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*\\}");	
 	private static final Pattern formulaRegePattern = Pattern.compile("#\\{\\w+(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*(\\.\\w+\\[\\?\\])?(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*\\}");
 
 	private Workbook workbook;
-	
-	private String moduleName;
 	private ExcelFileFormat format;
+	
+	private String modulePath;
 	
 	/**
 	 * 单元格int数组代表每个单元格的坐标: int[rowIndex, columnIndex]
@@ -71,8 +70,8 @@ public class PoiELModule implements ELModule {
 	 */
 	private Map<int[], int[]> regionMap;
 	
-	public PoiELModule(String moduleName, ExcelFileFormat format) throws FileNotFoundException, IOException {
-		this.moduleName = moduleName;
+	public PoiELModule(String path, ExcelFileFormat format) throws FileNotFoundException, IOException {
+		this.modulePath = path;
 		this.format = (format == ExcelFileFormat.XLS) ? ExcelFileFormat.XLS : ExcelFileFormat.XLSX;
 		
 		staticExprCells = new ArrayList<int[]>();
@@ -80,7 +79,7 @@ public class PoiELModule implements ELModule {
 		formulaExprCells = new ArrayList<Cell>();
 		regionMap = new HashMap<int[], int[]>();
 		
-		loadModule(moduleName);  // 加载模板
+		loadModule(modulePath);  // 加载模板
 		parse();                 // 解析模板
 	}
 	
@@ -88,8 +87,8 @@ public class PoiELModule implements ELModule {
 		return workbook;
 	}
 	
-	public String getModuleName() {
-		return moduleName;
+	public String getModulePath() {
+		return modulePath;
 	}
 	
 	public ExcelFileFormat getFormat() {
@@ -97,15 +96,15 @@ public class PoiELModule implements ELModule {
 	}
 	
 	public List<int[]> getStaticExprCells() {
-		return staticExprCells;
+		return Collections.unmodifiableList(staticExprCells);
 	}
 	
 	public List<List<int[]>> getDynamicExprCells() {
-		return dynamicExprCells;
+		return Collections.unmodifiableList(dynamicExprCells);
 	}
 	
 	public List<Cell> getFormulaExprCells() {
-		return formulaExprCells;
+		return Collections.unmodifiableList(formulaExprCells);
 	}
 	
 	public int[] getCellRegion(int[] point) {
@@ -155,9 +154,11 @@ public class PoiELModule implements ELModule {
 					} else {
 						staticExprCells.add(_point);
 					}
-				} else if (formulaRegePattern.matcher(_expr).find()) {
+				} 
+				else if (formulaRegePattern.matcher(_expr).find()) {
 					formulaExprCells.add(_cell);
-				} else {
+				} 
+				else {
 					continue;
 				}
 				// 建立合并单元格的映射关系
