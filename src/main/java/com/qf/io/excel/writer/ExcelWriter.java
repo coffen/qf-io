@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.qf.io.FileErrorException;
 import com.qf.io.excel.DataFetcher;
 import com.qf.io.excel.ExcelFileFormat;
 import com.qf.io.excel.UnsupportedExcelDataException;
@@ -52,46 +53,47 @@ public class ExcelWriter {
 	 * 适合于小数据集的导出（Rowcount <= 65535）
 	 * </p>
 	 * 
-	 * @param titles  表格标题栏
-	 * @param data    数据集
-	 * @param module  导出模板
-	 * @param format  导出格式（xls: 1997-2003; xlsx: 2007+）
-	 * @param stream  输出流
+	 * @param titles  		表格标题栏
+	 * @param data    		数据集
+	 * @param modulePath  	导出模板
+	 * @param stream  		输出流
 	 */
-	public static void write(LinkedHashMap<String, String> titles, List<Map<String, ?>> data, String moduleName, ExcelFileFormat format, OutputStream stream) throws UnsupportedExcelDataException, FileNotFoundException, IOException {
-		if (titles == null || titles.size() == 0 || data == null || StringUtils.isBlank(moduleName) || stream == null) {
+	public static void write(LinkedHashMap<String, String> titles, List<Map<String, ?>> data, String modulePath, OutputStream stream) throws UnsupportedExcelDataException, FileErrorException, FileNotFoundException, IOException {
+		if (titles == null || titles.size() == 0 || data == null || StringUtils.isBlank(modulePath) || stream == null) {
 			throw new UnsupportedExcelDataException(UnsupportedExcelDataException.ILLEGAL_PARAMS);
 		}
-		boolean isXls = format == ExcelFileFormat.XLS;
+		ListDataModule mod = getListDataModule(modulePath);
+		boolean isXls = mod.getFormat() == ExcelFileFormat.XLS;
 		if ((isXls && titles.size() > EXCEL_XLS_COLUMN_COUNT_MAX) || (!isXls && titles.size() > EXCEL_XLSX_COLUMN_COUNT_MAX)) {
 			throw new UnsupportedExcelDataException(UnsupportedExcelDataException.EXCEED_COLUMN_COUNT_LIMIT_ERROR);
 		}
 		if ((isXls && data.size() > EXCEL_XLS_ROW_COUNT_MAX) || (!isXls && data.size() > EXCEL_XLSX_ROW_COUNT_MAX)) {
 			throw new UnsupportedExcelDataException(UnsupportedExcelDataException.EXCEED_ROW_COUNT_LIMIT_ERROR);
 		}
-		ListDataModule mod = getListDataModule(moduleName, format);
 		mod.export(titles, data, stream);
-		log.info("Excel数据导出完成");
 	}
 	
 	/**
+	 * 
 	 * 按指定的Xls模板导出不规则数据集, 可以输出多个Sheet, 可以包含合并单元格、图片、计算公式
 	 * <p>
 	 * bean通常是一个统计Bean对象, 私有属性对应导出模板中的每一个输出项
 	 * bean对应的模板是以Bean类名命名, 有分别对应xls和xlsx格式的模板
 	 * </p>
 	 * 
-	 * @param bean    封装各项数据的Bean对象
-	 * @param format  导出格式（xls: 1997-2003; xlsx: 2007+）
-	 * @param stream  输出流
+	 * @param bean			封装各项数据的Bean对象
+	 * @param modulePath	模板路径
+	 * @param stream		输出流
+	 * @throws UnsupportedExcelDataException
+	 * @throws FileNotFoundException
+	 * @throws IOException
 	 */
-	public static void write(Serializable bean, String moduleName, ExcelFileFormat format, OutputStream stream) throws UnsupportedExcelDataException, FileNotFoundException, IOException {
-		if (bean == null || StringUtils.isBlank(moduleName) || stream == null) {
+	public static void write(Serializable bean, String modulePath, OutputStream stream) throws UnsupportedExcelDataException, FileErrorException, FileNotFoundException, IOException {
+		if (bean == null || StringUtils.isBlank(modulePath) || stream == null) {
 			throw new UnsupportedExcelDataException(UnsupportedExcelDataException.ILLEGAL_PARAMS);
 		}
-		ELModule mod = getELModule(moduleName, format);
-		mod.export(bean, format, stream);
-		log.info("Excel数据导出完成");
+		ELModule mod = getELModule(modulePath);
+		mod.export(bean, stream);
 	}
 	
 	/**
@@ -112,19 +114,27 @@ public class ExcelWriter {
 	/**
 	 * 获取列表模板对象
 	 * 
-	 * @return ListDataModule
+	 * @param modulePath	导出模板
+	 * @return
+	 * @throws FileNotFoundException
+	 * @throws FileErrorException
+	 * @throws IOException
 	 */
-	private static ListDataModule getListDataModule(String moduleName, ExcelFileFormat format) throws FileNotFoundException, IOException {
-		return new PoiListDataModule(moduleName, format);
+	private static ListDataModule getListDataModule(String modulePath) throws FileNotFoundException, FileErrorException, IOException {
+		return new PoiListDataModule(modulePath);
 	}
 	
 	/**
 	 * 获取支持EL表达式的模板对象
 	 * 
-	 * @return ELModule
+	 * @param modulePath	导出模板
+	 * @return
+	 * @throws FileNotFoundException
+	 * @throws FileErrorException
+	 * @throws IOException
 	 */
-	private static ELModule getELModule(String moduleName, ExcelFileFormat format) throws FileNotFoundException, IOException {
-		return new PoiELModule(moduleName, format);
+	private static ELModule getELModule(String modulePath) throws FileNotFoundException, FileErrorException, IOException {
+		return new PoiELModule(modulePath);
 	}
 	
 }

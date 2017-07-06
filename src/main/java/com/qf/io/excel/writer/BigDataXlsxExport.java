@@ -27,6 +27,7 @@ import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.util.CollectionUtils;
 
 import com.qf.io.excel.DataFetcher;
 
@@ -50,7 +51,7 @@ import com.qf.io.excel.DataFetcher;
  */
 public class BigDataXlsxExport {
 	
-	private final static String TEMP_FILE_PATH = "E:/Temp";
+	private final static String TEMP_FILE_PATH = "/temp/xml/";
     
 	/**
 	 * 导出大数据xlsx文档
@@ -71,9 +72,9 @@ public class BigDataXlsxExport {
 		List<Map<String, Object>> data = null;
 		File tmpXmlFile = null;
 		int i = 0;
-		while (fetcher.more()) {
+		while (fetcher.hasMore()) {
 			data = fetcher.getData();
-			if (data == null || data.size() == 0) {
+			if (CollectionUtils.isEmpty(data)) {
 				continue;
 			}
 			XSSFSheet sheet = book.createSheet("sheet" + (i + 1));

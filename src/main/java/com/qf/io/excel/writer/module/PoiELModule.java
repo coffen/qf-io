@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
@@ -22,6 +24,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import com.qf.io.FileErrorException;
 import com.qf.io.excel.ExcelFileFormat;
 import com.qf.io.excel.PoiUtils;
 import com.qf.io.excel.writer.ELModule;
@@ -70,17 +73,10 @@ public class PoiELModule implements ELModule {
 	 */
 	private Map<int[], int[]> regionMap;
 	
-	public PoiELModule(String path, ExcelFileFormat format) throws FileNotFoundException, IOException {
+	public PoiELModule(String path) throws FileNotFoundException, FileErrorException, IOException {
 		this.modulePath = path;
-		this.format = (format == ExcelFileFormat.XLS) ? ExcelFileFormat.XLS : ExcelFileFormat.XLSX;
 		
-		staticExprCells = new ArrayList<int[]>();
-		dynamicExprCells = new ArrayList<List<int[]>>();
-		formulaExprCells = new ArrayList<Cell>();
-		regionMap = new HashMap<int[], int[]>();
-		
-		loadModule(modulePath);  // 加载模板
-		parse();                 // 解析模板
+		init();
 	}
 	
 	public Workbook getWorkbook() {
@@ -110,9 +106,20 @@ public class PoiELModule implements ELModule {
 	public int[] getCellRegion(int[] point) {
 		return regionMap.get(point);
 	}
+	
+	private void init() throws FileErrorException, IOException {
+		staticExprCells = new ArrayList<int[]>();
+		dynamicExprCells = new ArrayList<List<int[]>>();
+		formulaExprCells = new ArrayList<Cell>();
+		regionMap = new HashMap<int[], int[]>();
+		
+		parse();
+	}
 
 	@Override
-	public void parse() {
+	public void parse() throws FileErrorException, IOException {
+		loadModule();	// 加载模板
+		
 		Sheet sheet = workbook.getSheetAt(0);  // 目前仅支持单个Sheet的运算
 		if (sheet.getPhysicalNumberOfRows() == 0) {
 			return;
@@ -151,7 +158,8 @@ public class PoiELModule implements ELModule {
 							_dynamicRow = new ArrayList<int[]>();
 						}
 						_dynamicRow.add(_point);
-					} else {
+					} 
+					else {
 						staticExprCells.add(_point);
 					}
 				} 
@@ -175,7 +183,7 @@ public class PoiELModule implements ELModule {
 	}
 
 	@Override
-	public void export(Serializable bean, ExcelFileFormat format, OutputStream stream) throws IOException {
+	public void export(Serializable bean, OutputStream stream) throws IOException {
 		Sheet sheet = workbook.getSheetAt(0);
 		// 设置解析器
 		SpelExprParsor parsor = new SpelExprParsor();
@@ -185,7 +193,7 @@ public class PoiELModule implements ELModule {
 		Object _cellVal = null;
 		int[] _region = null;
 		// 表达式单元格处理
-		if (staticExprCells != null && staticExprCells.size() > 0) {
+		if (CollectionUtils.isNotEmpty(staticExprCells)) {
 			for (int[] point : staticExprCells) {
 				if (point == null || point.length != 2) {
 					continue;
@@ -199,7 +207,8 @@ public class PoiELModule implements ELModule {
 					// 图片处理
 					if (regionMap.containsKey(point)) {
 						_region = regionMap.get(point);
-					} else {
+					} 
+					else {
 						_region = new int[] { _cell.getRowIndex(), _cell.getColumnIndex(), _cell.getRowIndex() + 1, _cell.getColumnIndex() + 1 };
 					}
 					PoiUtils.renderImage(workbook, 0, _region, (byte[])_cellVal);
@@ -211,7 +220,7 @@ public class PoiELModule implements ELModule {
 		}
 		// 动态表达式单元格处理
 		Map<String, int[]> dynamicCellsRegion = new HashMap<String, int[]>();
-		if (dynamicExprCells.size() > 0) {
+		if (CollectionUtils.isNotEmpty(dynamicExprCells)) {
 			int loopCount = 0;
 			int[] startPoint = null;
 			String listExpr, cellExpr = null;
@@ -252,7 +261,8 @@ public class PoiELModule implements ELModule {
 								// 图片处理
 								if (regionMap.containsKey(_point)) {
 									_region = regionMap.get(_point);
-								} else {
+								} 
+								else {
 									_region = new int[] { _cell.getRowIndex(), _cell.getColumnIndex(), _cell.getRowIndex() + 1, _cell.getColumnIndex() + 1 };
 								}
 								PoiUtils.renderImage(workbook, 0, _region, (byte[])_cellVal);
@@ -271,7 +281,7 @@ public class PoiELModule implements ELModule {
 		}
 		// 公式表达式单元格处理
 		String _formulaExpr;
-		if (formulaExprCells.size() > 0) {
+		if (CollectionUtils.isNotEmpty(formulaExprCells)) {
 			String[] _elArr = null;
 			int[] _point = null;
 			String _columnName = null;
@@ -307,26 +317,20 @@ public class PoiELModule implements ELModule {
 	
 	/**
 	 * 加载模板文件
-	 * 
-	 * @param module 模板文件名称
-	 * 
-	 * @return Workbook
 	 */
-	private void loadModule(String module) throws FileNotFoundException, IOException {
-		// 获取模板路径
-		String basePath = this.getClass().getResource("/").getPath();
-		if (basePath.indexOf("/") == 0 && basePath.indexOf(":") > 0) {
-			basePath = basePath.substring(1, basePath.lastIndexOf("/"));
-		} 
-		else {
-			basePath = basePath.substring(0, basePath.lastIndexOf("/"));
-		}
-		boolean isXls = format == ExcelFileFormat.XLS;
-		String modulePath = new StringBuffer(basePath).append(templateLocation).append(isXls ? "xls/" : "xlsx/").append(module).append(isXls ? ".xls" : ".xlsx").toString();
+	private void loadModule() throws FileNotFoundException, FileErrorException, IOException {
 		File file = new File(modulePath);
 		if (!file.exists() || !file.isFile()) {
 			throw new FileNotFoundException();
 		}
+		String ext = FilenameUtils.getExtension(modulePath);
+		try {
+			format = ExcelFileFormat.valueOf(ext.toUpperCase());
+		}
+		catch (Exception e) {
+			throw new FileErrorException(ext, FileErrorException.FILE_EXTENSION_ERROR);
+		}
+		boolean isXls = format == ExcelFileFormat.XLS;
 		workbook = isXls ? new HSSFWorkbook(new FileInputStream(modulePath)) : new XSSFWorkbook(new FileInputStream(modulePath));
 	}
 

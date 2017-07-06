@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
@@ -19,6 +20,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import com.qf.io.FileErrorException;
 import com.qf.io.excel.ExcelFileFormat;
 import com.qf.io.excel.PoiUtils;
 import com.qf.io.excel.writer.ListDataModule;
@@ -43,12 +45,10 @@ import com.qf.io.excel.writer.ListDataModule;
  */
 public class PoiListDataModule implements ListDataModule {
 	
-	private static final String templateLocation = "/template/output/";  // 模板存放位置
-
 	private Workbook workbook;
-	
-	private String moduleName;
 	private ExcelFileFormat format;
+	
+	private String modulePath;
 	
 	private Short headerHeight;
 	private Short rowHeight;
@@ -56,16 +56,14 @@ public class PoiListDataModule implements ListDataModule {
 	private CellStyle headerStyle;
 	private CellStyle[][] bodyStyle;
 	
-	public PoiListDataModule(String moduleName, ExcelFileFormat format) throws FileNotFoundException, IOException {
-		this.moduleName = moduleName;
-		this.format = (format == ExcelFileFormat.XLS) ? ExcelFileFormat.XLS : ExcelFileFormat.XLSX;
+	public PoiListDataModule(String path) throws FileNotFoundException, FileErrorException, IOException {
+		this.modulePath = path;
 		
-		loadModule(moduleName);  // 加载模板
-		parse();                 // 解析模板
+		init();
 	}
 	
-	public String getModuleName() {
-		return moduleName;
+	public String getModulePath() {
+		return modulePath;
 	}
 	
 	public ExcelFileFormat getFormat() {
@@ -88,8 +86,14 @@ public class PoiListDataModule implements ListDataModule {
 		return bodyStyle;
 	}
 	
+	private void init() throws FileErrorException, IOException {
+		parse();
+	}
+	
 	@Override
-	public void parse() {
+	public void parse() throws FileErrorException, IOException {
+		loadModule();	// 加载模板
+		
 		Sheet sheet = workbook.getSheetAt(0);
 		if (sheet.getPhysicalNumberOfRows() == 0) {
 			return;
@@ -189,7 +193,8 @@ public class PoiListDataModule implements ListDataModule {
 							if (_rowStyles[0] != null) {
 								_bodyCell.setCellStyle(_rowStyles[0]);
 							}
-						} else if (_rowStyles.length == 2) {
+						} 
+						else if (_rowStyles.length == 2) {
 							if (j == 0) {
 								if (_rowStyles[0] != null) {
 									_bodyCell.setCellStyle(_rowStyles[0]);
@@ -200,7 +205,8 @@ public class PoiListDataModule implements ListDataModule {
 									_bodyCell.setCellStyle(_rowStyles[1]);
 								}
 							}
-						} else {
+						} 
+						else {
 							if (j == 0) {
 								if (_rowStyles[0] != null) {
 									_bodyCell.setCellStyle(_rowStyles[0]);
@@ -240,6 +246,7 @@ public class PoiListDataModule implements ListDataModule {
 	public String transformToCss() {
 		StringBuffer cssText = new StringBuffer();
 		String lineSeparator = System.getProperty("line.separator");
+		String moduleName = FilenameUtils.getBaseName(modulePath);
 		String tableCssName = "table." + moduleName;
 		cssText.append(tableCssName).append(" { border-collapse: collapse; border: 0px; }").append(lineSeparator);
 		cssText.append(tableCssName).append(" td { padding-left: 3px; }").append(lineSeparator);
@@ -270,26 +277,20 @@ public class PoiListDataModule implements ListDataModule {
 	
 	/**
 	 * 加载模板文件
-	 * 
-	 * @param module 模板文件名称
-	 * 
-	 * @return Workbook
 	 */
-	private void loadModule(String module) throws FileNotFoundException, IOException {
-		// 获取模板路径
-		String basePath = this.getClass().getResource("/").getPath();
-		if (basePath.indexOf("/") == 0 && basePath.indexOf(":") > 0) {
-			basePath = basePath.substring(1, basePath.lastIndexOf("/"));
-		} 
-		else {
-			basePath = basePath.substring(0, basePath.lastIndexOf("/"));
-		}
-		boolean isXls = format == ExcelFileFormat.XLS;
-		String modulePath = new StringBuffer(basePath).append(templateLocation).append(isXls ? "xls/" : "xlsx/").append(module).append(isXls ? ".xls" : ".xlsx").toString();
+	private void loadModule() throws FileNotFoundException, FileErrorException, IOException {
 		File file = new File(modulePath);
 		if (!file.exists() || !file.isFile()) {
 			throw new FileNotFoundException();
 		}
+		String ext = FilenameUtils.getExtension(modulePath);
+		try {
+			format = ExcelFileFormat.valueOf(ext.toUpperCase());
+		}
+		catch (Exception e) {
+			throw new FileErrorException(ext, FileErrorException.FILE_EXTENSION_ERROR);
+		}
+		boolean isXls = format == ExcelFileFormat.XLS;
 		workbook = isXls ? new HSSFWorkbook(new FileInputStream(modulePath)) : new XSSFWorkbook(new FileInputStream(modulePath));
 	}
 

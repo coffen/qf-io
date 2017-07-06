@@ -31,7 +31,7 @@ public interface DataFetcher {
 	 * 
 	 * @return boolean true: 是, false: 否
 	 */
-	public boolean more();
+	public boolean hasMore();
 	
 	/**
 	 * 获取标题（标题-属性的映射关系）

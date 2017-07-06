@@ -1,5 +1,10 @@
 package com.qf.io.excel.writer;
 
+import java.io.IOException;
+
+import com.qf.io.FileErrorException;
+import com.qf.io.excel.ExcelFileFormat;
+
 /**
  * 
  * <p>
@@ -25,8 +30,18 @@ public interface ExportModule {
 	
 	/**
 	 * 解析模板文件
+	 * 
+	 * @throws FileErrorException
+	 * @throws IOException
 	 */
-	public void parse();
+	public void parse() throws FileErrorException, IOException;
+	
+	/**
+	 * 获取模板文件的格式
+	 * 
+	 * @return
+	 */
+	public ExcelFileFormat getFormat();
 	
 	/**
 	 * 将模板转换为HTML表格Css样式（部分模板色调上可能有偏差）

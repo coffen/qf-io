@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 
-import com.qf.io.excel.ExcelFileFormat;
-
 /**
  * 
  * <p>
@@ -32,9 +30,8 @@ public interface ELModule extends ExportModule {
 	 * 按模板设定导出Bean对象到指定输出流
 	 * 
 	 * @param bean    封装各项数据的Bean对象
-	 * @param format  导出格式（xls: 1997-2003; xlsx: 2007+）
 	 * @param stream  输出流
 	 */
-	public void export(Serializable bean, ExcelFileFormat format, OutputStream stream) throws IOException;
+	public void export(Serializable bean, OutputStream stream) throws IOException;
 	
 }
