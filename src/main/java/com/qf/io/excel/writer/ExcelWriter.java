@@ -71,6 +71,7 @@ public class ExcelWriter {
 			throw new UnsupportedExcelDataException(UnsupportedExcelDataException.EXCEED_ROW_COUNT_LIMIT_ERROR);
 		}
 		mod.export(titles, data, stream);
+		log.info("Excel数据导出完成");
 	}
 	
 	/**
@@ -94,6 +95,7 @@ public class ExcelWriter {
 		}
 		ELModule mod = getELModule(modulePath);
 		mod.export(bean, stream);
+		log.info("Excel数据导出完成");
 	}
 	
 	/**
