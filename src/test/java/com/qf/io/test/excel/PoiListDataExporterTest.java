@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +56,18 @@ public class PoiListDataExporterTest {
 			titleMap.put(fields[i], titles[i]);
 		}
 		List<Map<String, ?>> data = new ArrayList<Map<String, ?>>();
+		for (int i = 0; i < 10; i++) {
+			Map<String, Object> map = new HashMap<String, Object>();
+			map.put("id", i + 1);
+			map.put("title", "商品标题" + (i + 1));
+			map.put("link", "http://item.taobao.com?id=" + (i + 1));
+			map.put("link", "http://item.taobao.com?id=" + (i + 1));
+			map.put("price", String.format("%8.2f", Math.random() * 100));
+			map.put("stock", Math.round(Math.random() * 20));
+			map.put("remark", "...");
+			
+			data.add(map);
+		}		
 		
 		log.error("导出开始...");
 		

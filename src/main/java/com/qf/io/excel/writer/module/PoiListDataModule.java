@@ -45,7 +45,7 @@ import com.qf.io.excel.writer.ListDataModule;
  */
 public class PoiListDataModule implements ListDataModule {
 	
-	private final Short DEFAULT_HEADER_HEIGHT = 24;
+	private final Short DEFAULT_HEADER_HEIGHT = 480;
 	
 	private Workbook workbook;
 	private ExcelFileFormat format;
@@ -148,10 +148,10 @@ public class PoiListDataModule implements ListDataModule {
 						continue;
 					}
 					if (x == 0) {
-						rowHeight = row.getHeight();
+						rowHeight = row.getHeight();	// 首行行高作为表体行号
 					}
 					for (int j = 0; j < row.getLastCellNum(); j++) {
-						if (StringUtils.isNotBlank(row.getCell(j).getStringCellValue())) {
+						if (row.getCell(j) != null) {
 							bodyStyle[x][y] = row.getCell(j).getCellStyle();
 							y++;
 						}
@@ -165,7 +165,8 @@ public class PoiListDataModule implements ListDataModule {
 
 	@Override
 	public void export(LinkedHashMap<String, String> titles, List<Map<String, ?>> data, OutputStream stream) throws IOException {
-		Sheet sheet = workbook.createSheet();
+		final String sheetName = "导出数据";
+		Sheet sheet = workbook.createSheet(sheetName);
 		// 表头渲染
 		Row header = sheet.createRow(0);
 		int idx = 0;
@@ -178,7 +179,7 @@ public class PoiListDataModule implements ListDataModule {
 			if (headerStyle != null) {
 				_headerCell.setCellStyle(headerStyle);
 			}
-			hideHeader = hideHeader && StringUtils.isBlank(_title);
+			hideHeader = hideHeader && StringUtils.isBlank(_title);	// 如果表头标题都为空, 则表头应该隐藏
 		}
 		if (hideHeader) {
 			header.setZeroHeight(true); // 隐藏表头
@@ -255,8 +256,10 @@ public class PoiListDataModule implements ListDataModule {
 			sheet.setColumnWidth(i, sheet.getColumnWidth(i) * 2);
 		}
 		
-		// 删除模板Sheet
+		// 删除模板Sheet, 调整顺序
 		workbook.removeSheetAt(0);
+		workbook.setSheetOrder(sheetName, 0);
+		workbook.setActiveSheet(0);
 		
 		workbook.write(stream);
 		stream.close();
