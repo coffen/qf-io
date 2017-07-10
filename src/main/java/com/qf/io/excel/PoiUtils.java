@@ -145,20 +145,20 @@ public class PoiUtils {
 	}
 	
 	/**
-	 * 获取当前行第一个非空单元格
+	 * 获取当前行第一个样式
 	 * 
 	 * @param row 指定行
 	 * 
 	 * @return Cell
 	 */
-	public static Cell getFirstNotNullCell(Row row) {
+	public static CellStyle getFirstCellStyle(Row row) {
 		if (row == null || row.getPhysicalNumberOfCells() == 0) {
 			return null;
 		}
 		int lastCellIndex = row.getLastCellNum() - 1;
 		for (int i = 0; i <= lastCellIndex; i++) {
-			if (StringUtils.isNotBlank(row.getCell(i).getStringCellValue())) {
-				return row.getCell(i);
+			if (row.getCell(i).getCellStyle() != null) {
+				return row.getCell(i).getCellStyle();
 			}
 		}
 		return null;

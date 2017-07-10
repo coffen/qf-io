@@ -45,16 +45,22 @@ import com.qf.io.excel.writer.ListDataModule;
  */
 public class PoiListDataModule implements ListDataModule {
 	
+	private final Short DEFAULT_HEADER_HEIGHT = 24;
+	
 	private Workbook workbook;
 	private ExcelFileFormat format;
 	
 	private String modulePath;
 	
-	private Short headerHeight;
-	private Short rowHeight;
+	private Short headerHeight;			// 表头行高
+	private Short rowHeight;			// 表体行高
 	
-	private CellStyle headerStyle;
-	private CellStyle[][] bodyStyle;
+	private CellStyle headerStyle;		// 表头样式
+	private CellStyle[][] bodyStyle;	// 表体样式
+	
+	private boolean hasinitialized = false;
+	
+	private	boolean hideHeader = false;	// 是否隐藏表头
 	
 	public PoiListDataModule(String path) throws FileNotFoundException, FileErrorException, IOException {
 		this.modulePath = path;
@@ -86,12 +92,24 @@ public class PoiListDataModule implements ListDataModule {
 		return bodyStyle;
 	}
 	
+	public void setHideHeader(boolean hideHeader) {
+		this.hideHeader = hideHeader;
+	}
+	
+	public boolean isHideHeader() {
+		return hideHeader;
+	}
+	
 	private void init() throws FileErrorException, IOException {
 		parse();
 	}
 	
 	@Override
 	public void parse() throws FileErrorException, IOException {
+		if (hasinitialized) {
+			return;
+		}
+		
 		loadModule();	// 加载模板
 		
 		Sheet sheet = workbook.getSheetAt(0);
@@ -106,17 +124,20 @@ public class PoiListDataModule implements ListDataModule {
 			if (_row.getPhysicalNumberOfCells() == 0) {
 				continue;
 			}
-			headerHeight = _row.getHeight();
-			Cell tmp = PoiUtils.getFirstNotNullCell(_row);
+			CellStyle tmp = PoiUtils.getFirstCellStyle(_row);
 			if (tmp != null) {
-				headerStyle = tmp.getCellStyle();
+				headerHeight = _row.getHeight();
+				headerStyle = tmp;	// 多行表头的第一个非空单元格样式作为模板样式
 				break;
 			}
+		}
+		if (headerHeight == null || headerHeight <= 0) {
+			headerHeight = DEFAULT_HEADER_HEIGHT;
 		}
 		if (i < lastRowIndex) {
 			int[] region = PoiUtils.getMaxPhysicalRegion(sheet, 1, lastRowIndex);
 			if (region != null && region.length == 2 && region[0] > 0 && region[1] > 0) {
-				// 表体列样式的设置（0：无样式表体, 1: 单一设置的表体, 2: 包括主栏的表体, 3: 设置尾列的表体）
+				// 表体列样式的设置（0: 无样式表体, 1: 单一设置的表体, 2: 包括主栏的表体, 3: 设置尾列的表体）
 				bodyStyle = new CellStyle[region[0]][region[1]];
 				int x = 0;
 				Row row = null;
@@ -138,7 +159,8 @@ public class PoiListDataModule implements ListDataModule {
 					x++;
 				}
 			}
-		}
+		}		
+		hasinitialized = true;
 	}
 
 	@Override
@@ -149,7 +171,6 @@ public class PoiListDataModule implements ListDataModule {
 		int idx = 0;
 		String _title = null;
 		Cell _headerCell = null;
-		boolean hideHeader = true;
 		for (Iterator<String> iterator = titles.values().iterator(); iterator.hasNext(); idx++) {
 			_headerCell = header.createCell(idx);
 			_title = iterator.next();

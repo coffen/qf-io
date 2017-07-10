@@ -38,7 +38,7 @@ public class SimpleCsvReaderTest {
 	
 	private final static Logger log = LoggerFactory.getLogger(SimpleCsvReader.class);
 	
-	final String path = Thread.currentThread().getContextClassLoader().getResource("").getPath();
+	private final String path = Thread.currentThread().getContextClassLoader().getResource("").getPath();
 	
 	@Test
 	public void testReader() throws FileNotFoundException, IOException {
