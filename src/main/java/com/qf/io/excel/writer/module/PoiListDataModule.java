@@ -127,7 +127,7 @@ public class PoiListDataModule implements ListDataModule {
 			CellStyle tmp = PoiUtils.getFirstCellStyle(_row);
 			if (tmp != null) {
 				headerHeight = _row.getHeight();
-				headerStyle = tmp;	// 多行表头的第一个非空单元格样式作为模板样式
+				headerStyle = tmp;	// 多行表头的第一个非空单元格样式作为表头样式
 				break;
 			}
 		}
@@ -137,7 +137,6 @@ public class PoiListDataModule implements ListDataModule {
 		if (i < lastRowIndex) {
 			int[] region = PoiUtils.getMaxPhysicalRegion(sheet, 1, lastRowIndex);
 			if (region != null && region.length == 2 && region[0] > 0 && region[1] > 0) {
-				// 表体列样式的设置（0: 无样式表体, 1: 单一设置的表体, 2: 包括主栏的表体, 3: 设置尾列的表体）
 				bodyStyle = new CellStyle[region[0]][region[1]];
 				int x = 0;
 				Row row = null;
@@ -148,18 +147,21 @@ public class PoiListDataModule implements ListDataModule {
 						continue;
 					}
 					if (x == 0) {
-						rowHeight = row.getHeight();	// 首行行高作为表体行号
+						rowHeight = row.getHeight();	// 首行行高作为表体行高
 					}
-					for (int j = 0; j < row.getLastCellNum(); j++) {
+					for (int j = 0; j < region[1]; j++) {
 						if (row.getCell(j) != null) {
 							bodyStyle[x][y] = row.getCell(j).getCellStyle();
-							y++;
 						}
+						else {
+							bodyStyle[x][y] = null;
+						}
+						y++;
 					}
 					x++;
 				}
 			}
-		}		
+		}	
 		hasinitialized = true;
 	}
 
@@ -199,11 +201,11 @@ public class PoiListDataModule implements ListDataModule {
 				_rowData = data.get(i);
 				_row = sheet.createRow(i + 1);
 				if (bodyStyle != null && bodyStyle.length > 0) {
-					int _styleIndex = (i + 1) % bodyStyle.length - 1;
-					if (_styleIndex == -1) {
-						_styleIndex = bodyStyle.length - 1;
+					int _rowStyleIndex = (i + 1) % bodyStyle.length - 1;	// 样式逐行交替渲染
+					if (_rowStyleIndex == -1) {
+						_rowStyleIndex = bodyStyle.length - 1;
 					}
-					_rowStyles = bodyStyle[_styleIndex];
+					_rowStyles = bodyStyle[_rowStyleIndex];
 				}
 				int j = 0;
 				for (Iterator<String> iterator = titles.keySet().iterator(); iterator.hasNext(); j++) {
@@ -211,40 +213,46 @@ public class PoiListDataModule implements ListDataModule {
 					_key = iterator.next();
 					PoiUtils.assignValue(_bodyCell, _rowData.get(_key));
 					if (_rowStyles != null && _rowStyles.length > 0) {
-						if (_rowStyles.length == 1) {
-							if (_rowStyles[0] != null) {
-								_bodyCell.setCellStyle(_rowStyles[0]);
-							}
-						} 
-						else if (_rowStyles.length == 2) {
-							if (j == 0) {
-								if (_rowStyles[0] != null) {
-									_bodyCell.setCellStyle(_rowStyles[0]);
-								}
-							} 
-							else {
-								if (_rowStyles[1] != null) {
-									_bodyCell.setCellStyle(_rowStyles[1]);
-								}
-							}
-						} 
-						else {
-							if (j == 0) {
-								if (_rowStyles[0] != null) {
-									_bodyCell.setCellStyle(_rowStyles[0]);
-								}
-							} 
-							else if (j == titles.size()) {
-								if (_rowStyles[2] != null) {
-									_bodyCell.setCellStyle(_rowStyles[2]);
-								}
-							} 
-							else {
-								if (_rowStyles[1] != null) {
-									_bodyCell.setCellStyle(_rowStyles[1]);
-								}
-							}
+						int _cellStyleIndex = (j + 1) % _rowStyles.length - 1;	// 样式逐行交替渲染
+						if (_cellStyleIndex == -1) {
+							_cellStyleIndex = _rowStyles.length - 1;
 						}
+						_bodyCell.setCellStyle(_rowStyles[_cellStyleIndex]);
+						
+//						if (_rowStyles.length == 1) {
+//							if (_rowStyles[0] != null) {
+//								_bodyCell.setCellStyle(_rowStyles[0]);
+//							}
+//						} 
+//						else if (_rowStyles.length == 2) {
+//							if (j == 0) {
+//								if (_rowStyles[0] != null) {
+//									_bodyCell.setCellStyle(_rowStyles[0]);
+//								}
+//							} 
+//							else {
+//								if (_rowStyles[1] != null) {
+//									_bodyCell.setCellStyle(_rowStyles[1]);
+//								}
+//							}
+//						} 
+//						else {
+//							if (j == 0) {
+//								if (_rowStyles[0] != null) {
+//									_bodyCell.setCellStyle(_rowStyles[0]);
+//								}
+//							} 
+//							else if (j == titles.size()) {
+//								if (_rowStyles[2] != null) {
+//									_bodyCell.setCellStyle(_rowStyles[2]);
+//								}
+//							} 
+//							else {
+//								if (_rowStyles[1] != null) {
+//									_bodyCell.setCellStyle(_rowStyles[1]);
+//								}
+//							}
+//						}
 					}					
 				}
 			}
