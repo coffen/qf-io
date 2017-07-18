@@ -218,41 +218,6 @@ public class PoiListDataModule implements ListDataModule {
 							_cellStyleIndex = _rowStyles.length - 1;
 						}
 						_bodyCell.setCellStyle(_rowStyles[_cellStyleIndex]);
-						
-//						if (_rowStyles.length == 1) {
-//							if (_rowStyles[0] != null) {
-//								_bodyCell.setCellStyle(_rowStyles[0]);
-//							}
-//						} 
-//						else if (_rowStyles.length == 2) {
-//							if (j == 0) {
-//								if (_rowStyles[0] != null) {
-//									_bodyCell.setCellStyle(_rowStyles[0]);
-//								}
-//							} 
-//							else {
-//								if (_rowStyles[1] != null) {
-//									_bodyCell.setCellStyle(_rowStyles[1]);
-//								}
-//							}
-//						} 
-//						else {
-//							if (j == 0) {
-//								if (_rowStyles[0] != null) {
-//									_bodyCell.setCellStyle(_rowStyles[0]);
-//								}
-//							} 
-//							else if (j == titles.size()) {
-//								if (_rowStyles[2] != null) {
-//									_bodyCell.setCellStyle(_rowStyles[2]);
-//								}
-//							} 
-//							else {
-//								if (_rowStyles[1] != null) {
-//									_bodyCell.setCellStyle(_rowStyles[1]);
-//								}
-//							}
-//						}
 					}					
 				}
 			}
