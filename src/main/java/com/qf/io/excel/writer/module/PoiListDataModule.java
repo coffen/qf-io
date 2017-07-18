@@ -58,7 +58,7 @@ public class PoiListDataModule implements ListDataModule {
 	private CellStyle headerStyle;		// 表头样式
 	private CellStyle[][] bodyStyle;	// 表体样式
 	
-	private boolean hasinitialized = false;
+	private boolean hasInitialized = false;
 	
 	private	boolean hideHeader = false;	// 是否隐藏表头
 	
@@ -106,7 +106,7 @@ public class PoiListDataModule implements ListDataModule {
 	
 	@Override
 	public void parse() throws FileErrorException, IOException {
-		if (hasinitialized) {
+		if (hasInitialized) {
 			return;
 		}
 		
@@ -116,6 +116,7 @@ public class PoiListDataModule implements ListDataModule {
 		if (sheet.getPhysicalNumberOfRows() == 0) {
 			return;
 		}
+		
 		int lastRowIndex = sheet.getLastRowNum();
 		int i = 0;
 		Row _row = null;
@@ -162,7 +163,7 @@ public class PoiListDataModule implements ListDataModule {
 				}
 			}
 		}	
-		hasinitialized = true;
+		hasInitialized = true;
 	}
 
 	@Override

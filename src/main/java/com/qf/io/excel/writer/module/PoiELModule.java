@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +57,8 @@ public class PoiELModule implements ELModule {
 	
 	private String modulePath;
 	
+	private boolean hasInitialized = false;
+	
 	/**
 	 * 单元格int数组代表每个单元格的坐标: int[rowIndex, columnIndex]
 	 */
@@ -78,33 +79,13 @@ public class PoiELModule implements ELModule {
 		
 		init();
 	}
-	
-	public Workbook getWorkbook() {
-		return workbook;
-	}
-	
+
 	public String getModulePath() {
 		return modulePath;
 	}
 	
 	public ExcelFileFormat getFormat() {
 		return format;
-	}
-	
-	public List<int[]> getStaticExprCells() {
-		return Collections.unmodifiableList(staticExprCells);
-	}
-	
-	public List<List<int[]>> getDynamicExprCells() {
-		return Collections.unmodifiableList(dynamicExprCells);
-	}
-	
-	public List<Cell> getFormulaExprCells() {
-		return Collections.unmodifiableList(formulaExprCells);
-	}
-	
-	public int[] getCellRegion(int[] point) {
-		return regionMap.get(point);
 	}
 	
 	private void init() throws FileErrorException, IOException {
@@ -118,6 +99,10 @@ public class PoiELModule implements ELModule {
 
 	@Override
 	public void parse() throws FileErrorException, IOException {
+		if (hasInitialized) {
+			return;
+		}
+		
 		loadModule();	// 加载模板
 		
 		Sheet sheet = workbook.getSheetAt(0);  // 目前仅支持单个Sheet的运算
@@ -179,128 +164,131 @@ public class PoiELModule implements ELModule {
 			if (_dynamicRow != null) {
 				dynamicExprCells.add(_dynamicRow);
 			}
-		}
+		}		
+		hasInitialized = true;
 	}
 
 	@Override
 	public void export(Serializable bean, OutputStream stream) throws IOException {
 		Sheet sheet = workbook.getSheetAt(0);
-		// 设置解析器
-		SpelExprParsor parsor = new SpelExprParsor();
-		parsor.setRootVariable(bean);
-		
-		Cell _cell = null;
-		Object _cellVal = null;
-		int[] _region = null;
-		// 表达式单元格处理
-		if (CollectionUtils.isNotEmpty(staticExprCells)) {
-			for (int[] point : staticExprCells) {
-				if (point == null || point.length != 2) {
-					continue;
-				}
-				_cell = sheet.getRow(point[0]).getCell(point[1]);
-				if (_cell == null) {
-					continue;
-				}
-				_cellVal = parsor.getValue(_cell.getStringCellValue());
-				if (_cellVal instanceof byte[]) {
-					// 图片处理
-					if (regionMap.containsKey(point)) {
-						_region = regionMap.get(point);
-					} 
+		if (bean != null) {
+			// 设置解析器
+			SpelExprParsor parsor = new SpelExprParsor();
+			parsor.setRootVariable(bean);
+			
+			Cell _cell = null;
+			Object _cellVal = null;
+			int[] _region = null;
+			// 表达式单元格处理
+			if (CollectionUtils.isNotEmpty(staticExprCells)) {
+				for (int[] point : staticExprCells) {
+					if (point == null || point.length != 2) {
+						continue;
+					}
+					_cell = sheet.getRow(point[0]).getCell(point[1]);
+					if (_cell == null) {
+						continue;
+					}
+					_cellVal = parsor.getValue(_cell.getStringCellValue());
+					if (_cellVal instanceof byte[]) {
+						// 图片处理
+						if (regionMap.containsKey(point)) {
+							_region = regionMap.get(point);
+						} 
+						else {
+							_region = new int[] { _cell.getRowIndex(), _cell.getColumnIndex(), _cell.getRowIndex() + 1, _cell.getColumnIndex() + 1 };
+						}
+						PoiUtils.renderImage(workbook, 0, _region, (byte[])_cellVal);
+					}
 					else {
-						_region = new int[] { _cell.getRowIndex(), _cell.getColumnIndex(), _cell.getRowIndex() + 1, _cell.getColumnIndex() + 1 };
+						PoiUtils.assignValue(_cell, _cellVal);
 					}
-					PoiUtils.renderImage(workbook, 0, _region, (byte[])_cellVal);
-				}
-				else {
-					PoiUtils.assignValue(_cell, _cellVal);
 				}
 			}
-		}
-		// 动态表达式单元格处理
-		Map<String, int[]> dynamicCellsRegion = new HashMap<String, int[]>();
-		if (CollectionUtils.isNotEmpty(dynamicExprCells)) {
-			int loopCount = 0;
-			int[] startPoint = null;
-			String listExpr, cellExpr = null;
-			Row srcRow, tmpRow = null;
-			int gap = 0; // 当前一个动态行完成遍历后，后面的行的行坐标实际已经发生了变化, 该变量记录差值
-			for (List<int[]> dynalist : dynamicExprCells) {
-				if (dynalist == null || dynalist.size() == 0) {
-					continue;
-				}
-				startPoint = dynalist.get(0);
-				if (startPoint == null || startPoint.length != 2) {
-					continue;
-				}
-				srcRow = sheet.getRow(startPoint[0] + gap);
-				// 首个单元格的表达式（用于计算动态行长度）
-				listExpr = srcRow.getCell(startPoint[1]).getStringCellValue();
-				// 获取动态行的长度
-				loopCount = parsor.getListObjectSize(listExpr);
-				if (loopCount > 0) {
-					int insertCount = PoiUtils.copyRows(sheet, startPoint[0], startPoint[0] + 1, startPoint[0] + loopCount, false);
-					// 逐行赋值
-					for (int i = startPoint[0] + 1; i <= startPoint[0] + insertCount; i++) {
-						tmpRow = sheet.getRow(i);
-						String[] _elArr = null;
-						for (int[] _point : dynalist) {
-							cellExpr = srcRow.getCell(_point[1]).getStringCellValue();
-							// 存储动态表达式单元格的起始坐标（用于公式表达式的解析）
-							if (i == startPoint[0] + 1) {
-								_elArr = parsor.getElExpressions(cellExpr, true);
-								if (_elArr != null && _elArr.length > 0) {
-									dynamicCellsRegion.put(_elArr[0], new int[] { startPoint[0] + 1, _point[1], startPoint[0] + insertCount, _point[1] });
+			// 动态表达式单元格处理
+			Map<String, int[]> dynamicCellsRegion = new HashMap<String, int[]>();
+			if (CollectionUtils.isNotEmpty(dynamicExprCells)) {
+				int loopCount = 0;
+				int[] startPoint = null;
+				String listExpr, cellExpr = null;
+				Row srcRow, tmpRow = null;
+				int gap = 0; // 当前一个动态行完成遍历后，后面的行的行坐标实际已经发生了变化, 该变量记录差值
+				for (List<int[]> dynalist : dynamicExprCells) {
+					if (dynalist == null || dynalist.size() == 0) {
+						continue;
+					}
+					startPoint = dynalist.get(0);
+					if (startPoint == null || startPoint.length != 2) {
+						continue;
+					}
+					srcRow = sheet.getRow(startPoint[0] + gap);
+					// 首个单元格的表达式（用于计算动态行长度）
+					listExpr = srcRow.getCell(startPoint[1]).getStringCellValue();
+					// 获取动态行的长度
+					loopCount = parsor.getListObjectSize(listExpr);
+					if (loopCount > 0) {
+						int insertCount = PoiUtils.copyRows(sheet, startPoint[0], startPoint[0] + 1, startPoint[0] + loopCount, false);
+						// 逐行赋值
+						for (int i = startPoint[0] + 1; i <= startPoint[0] + insertCount; i++) {
+							tmpRow = sheet.getRow(i);
+							String[] _elArr = null;
+							for (int[] _point : dynalist) {
+								cellExpr = srcRow.getCell(_point[1]).getStringCellValue();
+								// 存储动态表达式单元格的起始坐标（用于公式表达式的解析）
+								if (i == startPoint[0] + 1) {
+									_elArr = parsor.getElExpressions(cellExpr, true);
+									if (_elArr != null && _elArr.length > 0) {
+										dynamicCellsRegion.put(_elArr[0], new int[] { startPoint[0] + 1, _point[1], startPoint[0] + insertCount, _point[1] });
+									}
 								}
-							}
-							cellExpr = cellExpr.replace("[?]", "[" + String.valueOf(i - startPoint[0] - 1) + "]");
-							_cellVal = parsor.getValue(cellExpr);
-							_cell = tmpRow.getCell(_point[1]);
-							if (_cellVal instanceof byte[]) {
-								// 图片处理
-								if (regionMap.containsKey(_point)) {
-									_region = regionMap.get(_point);
-								} 
+								cellExpr = cellExpr.replace("[?]", "[" + String.valueOf(i - startPoint[0] - 1) + "]");
+								_cellVal = parsor.getValue(cellExpr);
+								_cell = tmpRow.getCell(_point[1]);
+								if (_cellVal instanceof byte[]) {
+									// 图片处理
+									if (regionMap.containsKey(_point)) {
+										_region = regionMap.get(_point);
+									} 
+									else {
+										_region = new int[] { _cell.getRowIndex(), _cell.getColumnIndex(), _cell.getRowIndex() + 1, _cell.getColumnIndex() + 1 };
+									}
+									PoiUtils.renderImage(workbook, 0, _region, (byte[])_cellVal);
+								}
 								else {
-									_region = new int[] { _cell.getRowIndex(), _cell.getColumnIndex(), _cell.getRowIndex() + 1, _cell.getColumnIndex() + 1 };
+									PoiUtils.assignValue(_cell, _cellVal);
 								}
-								PoiUtils.renderImage(workbook, 0, _region, (byte[])_cellVal);
-							}
-							else {
-								PoiUtils.assignValue(_cell, _cellVal);
-							}
-						}						
-					}
-				}
-				// 动态行遍历完毕必须删除源数据行
-				sheet.shiftRows(startPoint[0] + 1, sheet.getLastRowNum(), -1);
-				
-				gap = loopCount - 1;
-			}
-		}
-		// 公式表达式单元格处理
-		String _formulaExpr;
-		if (CollectionUtils.isNotEmpty(formulaExprCells)) {
-			String[] _elArr = null;
-			int[] _point = null;
-			String _columnName = null;
-			for (Cell _formulaCell : formulaExprCells) {
-				if (_formulaCell == null) {
-					continue;
-				}
-				_formulaExpr = _formulaCell.getStringCellValue();
-				_elArr = parsor.getElExpressions(_formulaExpr, false);
-				if (_elArr != null && _elArr.length > 0) {
-					for (String _el : _elArr) {
-						if (dynamicCellsRegion.containsKey(_el)) {
-							_point =  dynamicCellsRegion.get(_el);
-							_columnName = PoiUtils.translateColumnIndex2Name(_point[1]);
-							_formulaExpr = _formulaExpr.replace("#{" + _el + "}", _columnName + _point[0] + ":" + _columnName + _point[2]);
+							}						
 						}
 					}
-					_formulaCell.setCellValue("");
-					_formulaCell.setCellFormula(_formulaExpr);
+					// 动态行遍历完毕必须删除源数据行
+					sheet.shiftRows(startPoint[0] + 1, sheet.getLastRowNum(), -1);
+					
+					gap = loopCount - 1;
+				}
+			}
+			// 公式表达式单元格处理
+			String _formulaExpr;
+			if (CollectionUtils.isNotEmpty(formulaExprCells)) {
+				String[] _elArr = null;
+				int[] _point = null;
+				String _columnName = null;
+				for (Cell _formulaCell : formulaExprCells) {
+					if (_formulaCell == null) {
+						continue;
+					}
+					_formulaExpr = _formulaCell.getStringCellValue();
+					_elArr = parsor.getElExpressions(_formulaExpr, false);
+					if (_elArr != null && _elArr.length > 0) {
+						for (String _el : _elArr) {
+							if (dynamicCellsRegion.containsKey(_el)) {
+								_point =  dynamicCellsRegion.get(_el);
+								_columnName = PoiUtils.translateColumnIndex2Name(_point[1]);
+								_formulaExpr = _formulaExpr.replace("#{" + _el + "}", _columnName + _point[0] + ":" + _columnName + _point[2]);
+							}
+						}
+						_formulaCell.setCellValue("");
+						_formulaCell.setCellFormula(_formulaExpr);
+					}
 				}
 			}
 		}

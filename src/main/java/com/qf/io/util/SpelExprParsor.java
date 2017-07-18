@@ -8,6 +8,8 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
@@ -31,20 +33,20 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
  */
 public class SpelExprParsor {
 	
-	// Spel解析器
-	SpelExpressionParser parser = new SpelExpressionParser();
-	// SPEL上下文
-	StandardEvaluationContext context = new StandardEvaluationContext();
+	private final static Logger log = LoggerFactory.getLogger(SpelExprParsor.class);
+	
+	private final SpelExpressionParser parser = new SpelExpressionParser();				// Spel解析器
+	private final StandardEvaluationContext context = new StandardEvaluationContext();	// Spel上下文
+	
+	private final static String ROOT_PREFIX = "_root";
 	
 	/**
-	 * 设置根对象到Spel上下文中
-	 * <br>
-	 * 根对象设为固定值root，意味着模板中的根对象名都应该是root
+	 * <p>设置根对象到Spel上下文中</p>
 	 * 
 	 * @param obj 根对象
 	 */
 	public void setRootVariable(Object obj) {
-		context.setVariable("rootObj", obj);
+		context.setVariable(ROOT_PREFIX, obj);
 	}
 	
 	/**
@@ -86,48 +88,56 @@ public class SpelExprParsor {
 	}
 	
 	/**
-	 * 获取表达式替换数据后的对象（目前只返回两类对象：byte[]和String, 分别对应图片和文本内容）
+	 * 获取静态表达式替换数据后的对象（目前只返回两类对象：byte[]和String, 分别对应图片和文本内容）
 	 * 
 	 * @param expression 包含EL表达式的字符串, 可能包含多个EL表达式, 例: 计划名称:${plan.planName}
 	 * 
 	 * @return String 替换后的字符串
 	 */	
 	public Object getValue(String expression) {
+		Object result = null;
 		if (StringUtils.isBlank(expression)) {
-			return "";
+			return result;
 		}
 		String exprRege = "\\$\\{\\w+(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*\\}";
 		Pattern pattern = Pattern.compile(exprRege);
 		Matcher matcher = pattern.matcher(expression);
+		String prefix = "#" + ROOT_PREFIX + ".";
+		
+		StringBuffer buffer = new StringBuffer();
 		while (matcher.find()) {
 			String group = matcher.group(0);
 			String queryName = group.replaceAll("\\$\\{|}", "");
 			String fragment = null;
 			try {
-				Object obj = parser.parseExpression("#" + queryName).getValue(context);
-				// 如果传入参数完全匹配EL表达式的规则, 直接返回对象
-				if (expression.equalsIgnoreCase(group)) {
+				Object obj = parser.parseExpression(prefix + queryName).getValue(context);
+				if (obj instanceof byte[]) { // byte[]不予处理, 直接返回对象
 					return obj;
 				}
 				if (obj instanceof Number) {
 					fragment = obj.toString();
-				} else if (obj instanceof String) {
+				} 
+				else if (obj instanceof String) {
 					fragment = (String)obj;
-				} else if (obj instanceof Date) {
-					fragment = new DateTime((Date)obj).toString("yyyy-MM-dd");
-				} else if (obj instanceof Boolean) {
-					fragment = obj.toString();
-				} else if (obj instanceof byte[]) { // byte[]不予处理
-					return obj;
-				} else {
+				} 
+				else if (obj instanceof Date) {
+					fragment = new DateTime((Date)obj).toString("yyyy-MM-dd HH:mm:ss");
+				} 
+				else if (obj instanceof Boolean) {
 					fragment = obj.toString();
 				}
-			} catch (Exception e) {
-				return null;
+				else {
+					fragment = obj.toString();
+				}
+			} 
+			catch (Exception e) {
+				log.error("表达式解析错误: expr=" + group, e);
 			}
-			expression = expression.replace(group, fragment != null ? fragment : "");
+			matcher.appendReplacement(buffer, fragment != null ? fragment : "");
 		}
-		return expression;
+		matcher.appendTail(buffer);		
+		result = buffer.toString();
+		return result;
 	}
 	
 	/**
@@ -144,6 +154,8 @@ public class SpelExprParsor {
 		String expr = "\\$\\{\\w+(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*\\.\\w+\\[\\?\\](\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*\\}";
 		Pattern pattern = Pattern.compile(expr);
 		Matcher matcher = pattern.matcher(expression);
+		String prefix = "#" + ROOT_PREFIX + ".";
+		
 		Object target = null;
 		while (matcher.find()) {
 			String group = matcher.group(0);
@@ -152,10 +164,12 @@ public class SpelExprParsor {
 			if (idx <= 0) {
 				return 0;
 			}
-			queryName = queryName.substring(0, idx);
+			queryName = queryName.substring(0, idx);	// 截取数组变量名称
 			try {
-				target = parser.parseExpression("#" + queryName).getValue(context);
-			} catch (Exception e) {
+				target = parser.parseExpression(prefix + queryName).getValue(context);
+			} 
+			catch (Exception e) {
+				log.error("表达式解析错误: expr=" + group, e);
 				return 0;
 			}
 			break;

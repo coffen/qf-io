@@ -25,9 +25,6 @@ import com.qf.io.excel.ExcelFileFormat;
  */
 public interface ExportModule {
 	
-	public final static int FORMAT_XLS = 1;
-	public final static int FORMAT_XLSX = 1 >> 1;
-	
 	/**
 	 * 解析模板文件
 	 * 
