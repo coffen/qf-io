@@ -200,7 +200,7 @@ public class PoiELModule implements ELModule {
 						}
 						PoiUtils.renderImage(workbook, 0, _region, (byte[])_cellVal);
 					}
-					else {
+					else if (_cellVal != null) {
 						PoiUtils.assignValue(_cell, _cellVal);
 					}
 				}
@@ -254,7 +254,7 @@ public class PoiELModule implements ELModule {
 									}
 									PoiUtils.renderImage(workbook, 0, _region, (byte[])_cellVal);
 								}
-								else {
+								else if (_cellVal != null) {
 									PoiUtils.assignValue(_cell, _cellVal);
 								}
 							}						

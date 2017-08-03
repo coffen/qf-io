@@ -1,5 +1,6 @@
 package com.qf.io.util;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -117,6 +118,9 @@ public class SpelExprParsor {
 				if (obj instanceof Number) {
 					fragment = obj.toString();
 				} 
+				if (obj instanceof BigDecimal) {
+					fragment = ((BigDecimal) obj).toEngineeringString();
+				} 
 				else if (obj instanceof String) {
 					fragment = (String)obj;
 				} 
@@ -131,7 +135,7 @@ public class SpelExprParsor {
 				}
 			} 
 			catch (Exception e) {
-				log.error("表达式解析错误: expr=" + group, e);
+				log.error("表达式解析错误: expr=" + group);
 			}
 			matcher.appendReplacement(buffer, fragment != null ? fragment : "");
 		}

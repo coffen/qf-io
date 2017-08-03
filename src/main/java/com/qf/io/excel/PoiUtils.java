@@ -365,7 +365,7 @@ public class PoiUtils {
 		} 
 		else if (value instanceof Boolean) {
 			cell.setCellValue((Boolean)value);
-		} 
+		}
 		else {
 			cell.setCellValue(value.toString());
 		}
@@ -396,12 +396,12 @@ public class PoiUtils {
 		anchor.setDx1(0);
 		anchor.setDy1(0);
 		anchor.setDx2(0);
-		anchor.setDy2(255);
+		anchor.setDy2(sheet.getRow(region[0]).getHeight() * 10000);
 		anchor.setRow1(region[0]);
 		anchor.setCol1((short)region[1]);
 		anchor.setRow2(region[2]);
 		anchor.setCol2((short)region[3]);  
-        patriarch.createPicture(anchor, work.addPicture(imgData, Workbook.PICTURE_TYPE_PNG));
+		patriarch.createPicture(anchor, work.addPicture(imgData, Workbook.PICTURE_TYPE_PNG));
 	}
 	
 	/**
