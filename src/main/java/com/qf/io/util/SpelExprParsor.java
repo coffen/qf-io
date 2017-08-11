@@ -155,7 +155,7 @@ public class SpelExprParsor {
 		if (StringUtils.isBlank(expression)) {
 			return 0;
 		}
-		String expr = "\\$\\{\\w+(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*\\.\\w+\\[\\?\\](\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*\\}";
+		String expr = "\\$\\{\\w+(\\[\\?\\])?(\\.\\w+(\\[\\?\\])?)*}";
 		Pattern pattern = Pattern.compile(expr);
 		Matcher matcher = pattern.matcher(expression);
 		String prefix = "#" + ROOT_PREFIX + ".";

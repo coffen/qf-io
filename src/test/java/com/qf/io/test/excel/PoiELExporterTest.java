@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -43,10 +45,10 @@ public class PoiELExporterTest {
 	
 	@Test
 	public void export() throws IOException, FileErrorException {
-		String filename = "elModule.xls";		
+		String filename = "elModule.xlsx";		
 		PoiELModule module = new PoiELModule(path + filename);
 		
-		String exportFile = "elModuleExportFile.xls";
+		String exportFile = "elModuleExportFile.xlsx";
 		OutputStream os = new FileOutputStream(new File(path + exportFile));
 		
 		ExporterBean bean = new ExporterBean();
@@ -101,6 +103,25 @@ public class PoiELExporterTest {
 			}
 		}
 		
+		List<PlanStat> statList = new ArrayList<PlanStat>();
+		bean.setStatListForPlan(statList);
+		
+		for (int i = 0; i < Math.random() * 20; i++) {
+			PlanStat stat = new PlanStat();
+			
+			stat.setStatDate(new DateTime().toDate());
+			
+			stat.setRepeatMemberCount((int)(Math.random() * 120));
+			stat.setPayedMemberCount((int)(Math.random() * 90));
+			stat.setRepeatOrderCount((int)(Math.random() * 140));
+			stat.setPayedMemberCount((int)(Math.random() * 80));
+			
+			stat.setRepeatSalesAmount(new BigDecimal((int)(Math.random() * 5200)));
+			stat.setPayedSalesAmount(new BigDecimal((int)(Math.random() * 4500)));
+			
+			statList.add(stat);
+		}
+		
 		log.error("导出开始...");
 		
 		module.export(bean, os);
@@ -143,6 +164,8 @@ public class PoiELExporterTest {
 		private byte[] img1;
 		private byte[] img2;
 		private byte[] img3;
+		
+		private List<PlanStat> statListForPlan;
 		
 		public SmsPlan getSmsPlanBean() {
 			return smsPlanBean;
@@ -328,6 +351,14 @@ public class PoiELExporterTest {
 			this.img3 = img3;
 		}
 		
+		public List<PlanStat> getStatListForPlan() {
+			return statListForPlan;
+		}
+		
+		public void setStatListForPlan(List<PlanStat> statListForPlan) {
+			this.statListForPlan = statListForPlan;
+		}
+		
 	}
 	
 	class SmsPlan {
@@ -379,6 +410,74 @@ public class PoiELExporterTest {
 			this.sendCount = sendCount;
 		}
 		
+	}
+	
+	class PlanStat {
+		
+		private Date statDate;
+		
+		private int repeatMemberCount;
+		private int payedMemberCount;
+		private int repeatOrderCount;
+		private int payedOrderCount;
+		private BigDecimal repeatSalesAmount;
+		private BigDecimal payedSalesAmount;
+		
+		public Date getStatDate() {
+			return statDate;
+		}
+		
+		public void setStatDate(Date statDate) {
+			this.statDate = statDate;
+		}
+		
+		public int getRepeatMemberCount() {
+			return repeatMemberCount;
+		}
+		
+		public void setRepeatMemberCount(int repeatMemberCount) {
+			this.repeatMemberCount = repeatMemberCount;
+		}
+		
+		public int getPayedMemberCount() {
+			return payedMemberCount;
+		}
+		
+		public void setPayedMemberCount(int payedMemberCount) {
+			this.payedMemberCount = payedMemberCount;
+		}
+		
+		public int getRepeatOrderCount() {
+			return repeatOrderCount;
+		}
+		
+		public void setRepeatOrderCount(int repeatOrderCount) {
+			this.repeatOrderCount = repeatOrderCount;
+		}
+		
+		public int getPayedOrderCount() {
+			return payedOrderCount;
+		}
+		
+		public void setPayedOrderCount(int payedOrderCount) {
+			this.payedOrderCount = payedOrderCount;
+		}
+		
+		public BigDecimal getRepeatSalesAmount() {
+			return repeatSalesAmount;
+		}
+		
+		public void setRepeatSalesAmount(BigDecimal repeatSalesAmount) {
+			this.repeatSalesAmount = repeatSalesAmount;
+		}
+		
+		public BigDecimal getPayedSalesAmount() {
+			return payedSalesAmount;
+		}
+		
+		public void setPayedSalesAmount(BigDecimal payedSalesAmount) {
+			this.payedSalesAmount = payedSalesAmount;
+		}		
 	}
 
 }

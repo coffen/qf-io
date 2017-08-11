@@ -49,8 +49,8 @@ import com.qf.io.util.SpelExprParsor;
  */
 public class PoiELModule implements ELModule {
 	
-	private static final Pattern valueRegePattern = Pattern.compile("\\$\\{\\w+(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*(\\.\\w+\\[\\?\\])?(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*\\}");	
-	private static final Pattern formulaRegePattern = Pattern.compile("#\\{\\w+(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*(\\.\\w+\\[\\?\\])?(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*\\}");
+	private static final Pattern valueRegePattern = Pattern.compile("\\$\\{\\w+(\\[\\?\\])?(\\.\\w+(\\[\\?\\])?)*}");	
+	private static final Pattern formulaRegePattern = Pattern.compile("#\\{\\w+(\\[\\?\\])?(\\.\\w+(\\[\\?\\])?)*}");
 
 	private Workbook workbook;
 	private ExcelFileFormat format;
@@ -127,7 +127,7 @@ public class PoiELModule implements ELModule {
 		for (int i = 0; i <= lastRowIndex; i++) {
 			_row = sheet.getRow(i);
 			_dynamicRow = null;
-			if (_row.getPhysicalNumberOfCells() == 0) {
+			if (_row == null || _row.getPhysicalNumberOfCells() == 0) {
 				continue;
 			}
 			for (int j = 0; j < _row.getLastCellNum(); j++) {
@@ -261,7 +261,7 @@ public class PoiELModule implements ELModule {
 						}
 					}
 					// 动态行遍历完毕必须删除源数据行
-					sheet.shiftRows(startPoint[0] + 1, sheet.getLastRowNum(), -1);
+					sheet.shiftRows(startPoint[0], sheet.getLastRowNum(), -1);
 					
 					gap = loopCount - 1;
 				}
@@ -320,6 +320,13 @@ public class PoiELModule implements ELModule {
 		}
 		boolean isXls = format == ExcelFileFormat.XLS;
 		workbook = isXls ? new HSSFWorkbook(new FileInputStream(modulePath)) : new XSSFWorkbook(new FileInputStream(modulePath));
+	}
+	
+	public static void main(String[] args) {
+		String str = "${statListForPlan[?].repeatMemberCount}";
+		Pattern p = Pattern.compile("\\$\\{\\w+(\\[\\?\\])?(\\.\\w+(\\[\\?\\])?)*}");
+		boolean find = p.matcher(str).find();
+		System.out.println(find);
 	}
 
 }

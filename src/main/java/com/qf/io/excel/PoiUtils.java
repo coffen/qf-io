@@ -249,7 +249,7 @@ public class PoiUtils {
 			if (toRow == null) {
 	        	toRow = sheet.createRow(i);
 	        }
-			sheet.shiftRows(i, sheet.getLastRowNum(), 1);
+			sheet.shiftRows(i + 1, sheet.getLastRowNum(), 1);
 			// 复制单元格并设置同样的样式、注解、数据等
 			Cell srcCell, tmpCell = null;
 			for (int j = fromRow.getFirstCellNum(); j < fromRow.getPhysicalNumberOfCells(); j++) {
