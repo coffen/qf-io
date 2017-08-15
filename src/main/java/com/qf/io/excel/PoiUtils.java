@@ -223,7 +223,7 @@ public class PoiUtils {
 	 * 
 	 */
 	public static int copyRows(Sheet sheet, int srcRow, int firstRow, int lastRow, boolean needCopyValue) {
-		if (sheet == null || srcRow < 0 || firstRow < 0 || lastRow < 0 || srcRow >= sheet.getPhysicalNumberOfRows()) {
+		if (sheet == null || srcRow < 0 || firstRow < 0 || lastRow < 0) {
 			return -1;
 		}
 		// 参数传反的处理
@@ -249,7 +249,9 @@ public class PoiUtils {
 			if (toRow == null) {
 	        	toRow = sheet.createRow(i);
 	        }
-			sheet.shiftRows(i + 1, sheet.getLastRowNum(), 1);
+			if (i + 1 <= sheet.getLastRowNum()) {
+				sheet.shiftRows(i + 1, sheet.getLastRowNum(), 1);
+			}
 			// 复制单元格并设置同样的样式、注解、数据等
 			Cell srcCell, tmpCell = null;
 			for (int j = fromRow.getFirstCellNum(); j < fromRow.getPhysicalNumberOfCells(); j++) {

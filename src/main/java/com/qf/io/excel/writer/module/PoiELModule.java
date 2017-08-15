@@ -218,10 +218,11 @@ public class PoiELModule implements ELModule {
 						continue;
 					}
 					startPoint = dynalist.get(0);
+					startPoint[0] = startPoint[0] + gap;
 					if (startPoint == null || startPoint.length != 2) {
 						continue;
 					}
-					srcRow = sheet.getRow(startPoint[0] + gap);
+					srcRow = sheet.getRow(startPoint[0]);
 					// 首个单元格的表达式（用于计算动态行长度）
 					listExpr = srcRow.getCell(startPoint[1]).getStringCellValue();
 					// 获取动态行的长度
@@ -260,10 +261,16 @@ public class PoiELModule implements ELModule {
 							}						
 						}
 					}
-					// 动态行遍历完毕必须删除源数据行
-					sheet.shiftRows(startPoint[0], sheet.getLastRowNum(), -1);
+					// 动态行遍历完毕必须隐藏源数据行
+					for (int i = srcRow.getFirstCellNum(); i < srcRow.getLastCellNum(); i++) {
+						Cell c = srcRow.getCell(i);
+						if (c != null) {
+							srcRow.removeCell(c);
+						}
+					}
+					srcRow.setHeight((short)0);
 					
-					gap = loopCount - 1;
+					gap += loopCount;
 				}
 			}
 			// 公式表达式单元格处理
@@ -320,13 +327,6 @@ public class PoiELModule implements ELModule {
 		}
 		boolean isXls = format == ExcelFileFormat.XLS;
 		workbook = isXls ? new HSSFWorkbook(new FileInputStream(modulePath)) : new XSSFWorkbook(new FileInputStream(modulePath));
-	}
-	
-	public static void main(String[] args) {
-		String str = "${statListForPlan[?].repeatMemberCount}";
-		Pattern p = Pattern.compile("\\$\\{\\w+(\\[\\?\\])?(\\.\\w+(\\[\\?\\])?)*}");
-		boolean find = p.matcher(str).find();
-		System.out.println(find);
 	}
 
 }

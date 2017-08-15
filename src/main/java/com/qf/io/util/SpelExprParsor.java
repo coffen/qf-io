@@ -66,7 +66,7 @@ public class SpelExprParsor {
 		if (StringUtils.isBlank(expression)) {
 			return null;
 		}
-		String exprRege = "[#\\$]\\{\\w+(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*(\\.\\w+\\[\\?\\])?(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*\\}";
+		String exprRege = "[#\\$]\\{\\w+(\\[\\?\\])?(\\.\\w+(\\[\\?\\])?)*}";
 		if (isRestrict) {
 			return Pattern.matches(exprRege, expression) ? new String[] { expression.replaceAll("[#\\$]\\{|}", "") } : null;
 		}
@@ -100,7 +100,7 @@ public class SpelExprParsor {
 		if (StringUtils.isBlank(expression)) {
 			return result;
 		}
-		String exprRege = "\\$\\{\\w+(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*\\}";
+		String exprRege = "\\$\\{\\w+(\\[(0|[1-9][0-9]*)\\])?(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*}";
 		Pattern pattern = Pattern.compile(exprRege);
 		Matcher matcher = pattern.matcher(expression);
 		String prefix = "#" + ROOT_PREFIX + ".";

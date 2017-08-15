@@ -114,12 +114,31 @@ public class PoiELExporterTest {
 			stat.setRepeatMemberCount((int)(Math.random() * 120));
 			stat.setPayedMemberCount((int)(Math.random() * 90));
 			stat.setRepeatOrderCount((int)(Math.random() * 140));
-			stat.setPayedMemberCount((int)(Math.random() * 80));
+			stat.setPayedOrderCount((int)(Math.random() * 80));
 			
 			stat.setRepeatSalesAmount(new BigDecimal((int)(Math.random() * 5200)));
 			stat.setPayedSalesAmount(new BigDecimal((int)(Math.random() * 4500)));
 			
 			statList.add(stat);
+		}
+		
+		List<PlanStat> repeatList = new ArrayList<PlanStat>();
+		bean.setRepeatListForPlan(repeatList);
+		
+		for (int i = 0; i < Math.random() * 20; i++) {
+			PlanStat stat = new PlanStat();
+			
+			stat.setStatDate(new DateTime().toDate());
+			
+			stat.setRepeatMemberCount((int)(Math.random() * 120));
+			stat.setPayedMemberCount((int)(Math.random() * 90));
+			stat.setRepeatOrderCount((int)(Math.random() * 140));
+			stat.setPayedOrderCount((int)(Math.random() * 80));
+			
+			stat.setRepeatSalesAmount(new BigDecimal((int)(Math.random() * 5200)));
+			stat.setPayedSalesAmount(new BigDecimal((int)(Math.random() * 4500)));
+			
+			repeatList.add(stat);
 		}
 		
 		log.error("导出开始...");
@@ -166,6 +185,7 @@ public class PoiELExporterTest {
 		private byte[] img3;
 		
 		private List<PlanStat> statListForPlan;
+		private List<PlanStat> repeatListForPlan;
 		
 		public SmsPlan getSmsPlanBean() {
 			return smsPlanBean;
@@ -357,6 +377,14 @@ public class PoiELExporterTest {
 		
 		public void setStatListForPlan(List<PlanStat> statListForPlan) {
 			this.statListForPlan = statListForPlan;
+		}
+		
+		public List<PlanStat> getRepeatListForPlan() {
+			return repeatListForPlan;
+		}
+		
+		public void setRepeatListForPlan(List<PlanStat> repeatListForPlan) {
+			this.repeatListForPlan = repeatListForPlan;
 		}
 		
 	}
