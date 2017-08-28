@@ -3,6 +3,7 @@ package com.qf.io.excel.writer;
 import java.io.IOException;
 
 import com.qf.io.FileErrorException;
+import com.qf.io.ModuleParseException;
 import com.qf.io.excel.ExcelFileFormat;
 
 /**
@@ -31,7 +32,7 @@ public interface ExportModule {
 	 * @throws FileErrorException
 	 * @throws IOException
 	 */
-	public void parse() throws FileErrorException, IOException;
+	public void parse() throws FileErrorException, IOException, ModuleParseException;
 	
 	/**
 	 * 获取模板文件的格式

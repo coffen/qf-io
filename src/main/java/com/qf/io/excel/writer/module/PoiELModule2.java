@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,6 +20,7 @@ import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.qf.io.FileErrorException;
+import com.qf.io.ModuleParseException;
 import com.qf.io.excel.ExcelFileFormat;
 import com.qf.io.excel.writer.ELModule;
 import com.qf.io.excel.writer.module.ElModuleConfig.ElCell;
@@ -49,24 +51,42 @@ public class PoiELModule2 implements ELModule {
 	private static final Pattern REGE_PATTERN = Pattern.compile("(\\$|#)\\{\\w+(\\[\\?\\])?(\\.\\w+(\\[\\?\\])?)*}");	
 
 	private Workbook workbook;
-	private ExcelFileFormat format;
-	
+	private ExcelFileFormat format;	
 	private String modulePath;
-	
-	private boolean hasInitialized = false;
 	
 	private ElModuleConfig config;
 	
-	public PoiELModule2(String path) throws FileNotFoundException, FileErrorException, IOException {
+	private boolean hasInitialized = false;
+	
+	private ReentrantLock lock = new ReentrantLock();
+	
+	public PoiELModule2(String path) throws Exception {
 		this.modulePath = path;
 		
 		init();
 	}
 	
-	private void init() throws FileErrorException, IOException {
+	private void init() throws Exception {
 		config = new ElModuleConfig();
 		
-		parse();
+		boolean locked = lock.tryLock();
+		if (locked) {
+			if (!hasInitialized) {
+				try {
+					parse();
+					hasInitialized = true;
+				}
+				catch (Exception e) {
+					throw e;
+				}
+				finally {
+					lock.unlock();
+				}
+			}
+			else {
+				lock.unlock();
+			}
+		}
 	}
 	
 	public String getModulePath() {
@@ -74,11 +94,7 @@ public class PoiELModule2 implements ELModule {
 	}
 
 	@Override
-	public void parse() throws FileErrorException, IOException {
-		if (hasInitialized) {
-			return;
-		}
-		
+	public void parse() throws FileErrorException, IOException, ModuleParseException {
 		loadModule();	// 加载模板
 		
 		int sheetCount = workbook.getNumberOfSheets();
@@ -87,11 +103,10 @@ public class PoiELModule2 implements ELModule {
 			if (elSheet != null) {
 				config.addElSheet(elSheet);
 			}
-		}		
-		hasInitialized = true;
+		}
 	}
 	
-	private ElSheet parseSheet(int idx) {
+	private ElSheet parseSheet(int idx) throws ModuleParseException {
 		ElSheet elSheet = null;
 		
 		Sheet sheet = workbook.getSheetAt(idx);
@@ -118,7 +133,7 @@ public class PoiELModule2 implements ELModule {
 		return elSheet;
 	}
 	
-	private ElRow parseRow(Row row, ElSheet sheet) {
+	private ElRow parseRow(Row row, ElSheet sheet) throws ModuleParseException {
 		ElRow elRow = null;
 		if (row != null) {
 			Cell cell = null;
@@ -149,7 +164,7 @@ public class PoiELModule2 implements ELModule {
 		return elRow;
 	}
 	
-	private ElCell parseCell(Cell cell) {
+	private ElCell parseCell(Cell cell) throws ModuleParseException {
 		ElCell elCell = null;
 		if (cell != null) {
 			int rowIndex = cell.getRowIndex();
@@ -161,11 +176,11 @@ public class PoiELModule2 implements ELModule {
 				type = ElCellType.FORMULA;
 			}
 			else {
-				if (srcExpr.startsWith("#")) {
-					// 错误
-				}
 				while (matcher.find()) {
 					String group = matcher.group(0);
+					if (srcExpr.startsWith("#")) {
+						throw new ModuleParseException("Formula expr error.");
+					}
 					if (group.indexOf("[?]") > 0) {
 						type = ElCellType.DYNAMIC;
 						break;
@@ -194,7 +209,7 @@ public class PoiELModule2 implements ELModule {
 
 	@Override
 	public void export(Serializable bean, OutputStream stream) throws IOException {
-
+		
 	}
 	
 	/**
