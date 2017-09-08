@@ -82,19 +82,19 @@ public class ExcelWriter {
 	 * bean对应的模板是以Bean类名命名, 有分别对应xls和xlsx格式的模板
 	 * </p>
 	 * 
-	 * @param bean			封装各项数据的Bean对象
 	 * @param modulePath	模板路径
 	 * @param stream		输出流
+	 * @param beans			封装各项数据的Bean对象数组
 	 * @throws UnsupportedExcelDataException
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	public static void write(Serializable bean, String modulePath, OutputStream stream) throws UnsupportedExcelDataException, FileErrorException, FileNotFoundException, IOException {
-		if (bean == null || StringUtils.isBlank(modulePath) || stream == null) {
+	public static void write(String modulePath, OutputStream stream, Serializable... beans) throws UnsupportedExcelDataException, FileErrorException, FileNotFoundException, IOException {
+		if (beans == null || StringUtils.isBlank(modulePath) || stream == null) {
 			throw new UnsupportedExcelDataException(UnsupportedExcelDataException.ILLEGAL_PARAMS);
 		}
 		ELModule mod = getELModule(modulePath);
-		mod.export(bean, stream);
+		mod.export(stream, beans);
 		log.info("Excel数据导出完成");
 	}
 	

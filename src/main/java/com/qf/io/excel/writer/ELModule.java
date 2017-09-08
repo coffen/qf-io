@@ -29,9 +29,9 @@ public interface ELModule extends ExportModule {
 	/**
 	 * 按模板设定导出Bean对象到指定输出流
 	 * 
-	 * @param bean    封装各项数据的Bean对象
-	 * @param stream  输出流
+	 * @param stream	输出流
+	 * @param beans 	封装各项数据的Bean对象数组, 对应每一个Sheet的数据
 	 */
-	public void export(Serializable bean, OutputStream stream) throws IOException;
+	public void export(OutputStream stream, Serializable... beans) throws IOException;
 	
 }

@@ -27,6 +27,7 @@ import com.qf.io.excel.writer.module.ElModuleConfig.ElCell;
 import com.qf.io.excel.writer.module.ElModuleConfig.ElCellType;
 import com.qf.io.excel.writer.module.ElModuleConfig.ElRow;
 import com.qf.io.excel.writer.module.ElModuleConfig.ElSheet;
+import com.qf.io.util.SpelExprParsor;
 
 /**
  * 
@@ -67,10 +68,11 @@ public class PoiELModule2 implements ELModule {
 	}
 	
 	private void init() throws Exception {
-		config = new ElModuleConfig();
+		if (hasInitialized) {
+			return;
+		}
 		
-		boolean locked = lock.tryLock();
-		if (locked) {
+		if (lock.tryLock()) {
 			if (!hasInitialized) {
 				try {
 					parse();
@@ -96,6 +98,8 @@ public class PoiELModule2 implements ELModule {
 	@Override
 	public void parse() throws FileErrorException, IOException, ModuleParseException {
 		loadModule();	// 加载模板
+		
+		config = new ElModuleConfig();
 		
 		int sheetCount = workbook.getNumberOfSheets();
 		for (int i = 0; i < sheetCount; i++) {
@@ -208,8 +212,33 @@ public class PoiELModule2 implements ELModule {
 	}
 
 	@Override
-	public void export(Serializable bean, OutputStream stream) throws IOException {
+	public void export(OutputStream stream, Serializable... beans) throws IOException {
+		int sheetCount = workbook.getNumberOfSheets();
+		for (int i = 0; i < sheetCount; i++) {
+			Serializable bean = (beans != null && beans.length > i) ? beans[i] : null;
+			ElSheet elSheet = config.getElSheet(i);
+			Sheet sheet = workbook.getSheetAt(i);
+			exportSheet(elSheet, sheet, bean);
+		}
+		// 清除Sheet模板
+	}
+	
+	private void exportSheet(ElSheet sheetConfig, Sheet moduleSheet, Serializable bean) {
+		Sheet targetSheet = null;
 		
+		if (bean != null) {
+			targetSheet = workbook.createSheet();
+			// 设置解析器
+			SpelExprParsor parsor = new SpelExprParsor();
+			parsor.setRootVariable(bean);
+			
+			for (int i = 0; i <= moduleSheet.getLastRowNum(); i++) {
+				
+			}
+		}
+		else {
+			targetSheet = workbook.cloneSheet(sheetConfig.getSheetIndex());
+		}
 	}
 	
 	/**

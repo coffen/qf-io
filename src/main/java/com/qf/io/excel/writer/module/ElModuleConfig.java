@@ -28,8 +28,12 @@ public class ElModuleConfig {
 	
 	private List<ElSheet> elSheets = new ArrayList<ElSheet>();
 	
-	public List<ElSheet> getElSheets() {
-		return Collections.unmodifiableList(elSheets);
+	public ElSheet getElSheet(int sheetIndex) {
+		ElSheet elSheet = null;
+		if (elSheets != null && elSheets.size() > sheetIndex) {
+			elSheet = elSheets.get(sheetIndex);
+		}
+		return elSheet;
 	}
 	
 	public void addElSheet(ElSheet sheet) {
