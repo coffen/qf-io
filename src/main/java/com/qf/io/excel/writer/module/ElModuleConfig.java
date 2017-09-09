@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * 
  * <p>
@@ -47,7 +49,7 @@ public class ElModuleConfig {
 		
 		int sheetIndex;
 
-		List<ElRow> elRows = new ArrayList<ElRow>();
+		Map<Integer, ElRow> elRowMap = new HashMap<Integer, ElRow>();
 		
 		List<int[]> mergedCells = new ArrayList<int[]>();
 		
@@ -57,7 +59,14 @@ public class ElModuleConfig {
 		 * 格式：Map<int[rowIndex, columnIndex], int[startRowIndex, startColumnIndex, endRowIndex, endColumnIndex]>
 		 * 当表达式单元格是一个合并单元格式, 记录其区域范围
 		 */
-		Map<int[], int[]> regionMap = new HashMap<int[], int[]>();
+		Map<int[], int[]> mergedRegionMap = new HashMap<int[], int[]>();
+		
+		/**
+		 * <p>动态单元格区域映射表</p>
+		 * 
+		 * 格式：Map<表达式, int[startRowIndex, endRowIndex, columnIndex]>
+		 */
+		Map<String, int[]> dynamicRegionMap = new HashMap<String, int[]>();
 		
 		public ElSheet(int sheetIndex) {
 			this.sheetIndex = sheetIndex;
@@ -67,8 +76,8 @@ public class ElModuleConfig {
 			return sheetIndex;
 		}
 		
-		public List<ElRow> getElRows() {
-			return Collections.unmodifiableList(elRows);
+		public ElRow getElRow(int rowIndex) {
+			return elRowMap.get(rowIndex);
 		}
 		
 		public List<int[]> getMergedCells() {
@@ -79,7 +88,7 @@ public class ElModuleConfig {
 			if (row == null) {
 				return;
 			}
-			elRows.add(row);
+			elRowMap.put(row.getRowIndex(), row);
 		}
 		
 		public void addMergedCell(int[] region) {
@@ -89,22 +98,34 @@ public class ElModuleConfig {
 			mergedCells.add(region);
 		}
 		
-		public void putRegion(int[] point, int[] region) {
-			if (point == null || region == null) {
+		public void putMergedRegion(int[] point, int[] region) {
+			if (point == null || region == null || region.length != 4) {
 				return;
 			}
-			regionMap.put(point, region);
+			mergedRegionMap.put(point, region);
 		}
 		
-		public int[] getRegion(int[] point) {
-			return regionMap.get(point);
+		public int[] getMergedRegion(int[] point) {
+			return mergedRegionMap.get(point);
+		}
+		
+		public void putDynamicRegion(String expr, int[] region) {
+			if (StringUtils.isBlank(expr) || region == null || region.length != 3) {
+				return;
+			}
+			dynamicRegionMap.put(expr, region);
+		}
+		
+		public int[] getDynamicRegion(String expr) {
+			return dynamicRegionMap.get(expr);
 		}
 		
 	}
 	
 	static class ElRow {
 		
-		int rowIndex;	// 行索引
+		int rowIndex;			// 行索引
+		int dynamicRowCount;	// 动态行长度
 		
 		List<ElCell> staticElCells = new ArrayList<ElCell>();	// 静态表达式列表
 		List<ElCell> dynamicElCells = new ArrayList<ElCell>();	// 动态表达式列表
@@ -116,6 +137,14 @@ public class ElModuleConfig {
 		
 		public int getRowIndex() {
 			return rowIndex;
+		}
+		
+		public int getDynamicRowCount() {
+			return dynamicRowCount;
+		}
+		
+		public void setDynamicRowCount(int dynamicRowCount) {
+			this.dynamicRowCount = dynamicRowCount;
 		}
 		
 		List<ElCell> getStaticElCells() {

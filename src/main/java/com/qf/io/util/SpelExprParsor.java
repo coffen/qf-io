@@ -103,7 +103,7 @@ public class SpelExprParsor {
 		String exprRege = "\\$\\{\\w+(\\[(0|[1-9][0-9]*)\\])?(\\.\\w+(\\[(0|[1-9][0-9]*)\\])?)*}";
 		Pattern pattern = Pattern.compile(exprRege);
 		Matcher matcher = pattern.matcher(expression);
-		String prefix = "#" + ROOT_PREFIX + ".";
+		String prefix = buildPrefix();
 		
 		StringBuffer buffer = new StringBuffer();
 		while (matcher.find()) {
@@ -158,7 +158,7 @@ public class SpelExprParsor {
 		String expr = "\\$\\{\\w+(\\[\\?\\])?(\\.\\w+(\\[\\?\\])?)*}";
 		Pattern pattern = Pattern.compile(expr);
 		Matcher matcher = pattern.matcher(expression);
-		String prefix = "#" + ROOT_PREFIX + ".";
+		String prefix = buildPrefix();
 		
 		Object target = null;
 		while (matcher.find()) {
@@ -182,6 +182,10 @@ public class SpelExprParsor {
 			return 0;
 		}
 		return ((List<?>)target).size();
+	}
+	
+	private String buildPrefix() {
+		return "#" + ROOT_PREFIX + ".";
 	}
 	
 }

@@ -222,8 +222,8 @@ public class PoiUtils {
 	 * @return int 插入的行数
 	 * 
 	 */
-	public static int copyRows(Sheet sheet, int srcRow, int firstRow, int lastRow, boolean needCopyValue) {
-		if (sheet == null || srcRow < 0 || firstRow < 0 || lastRow < 0) {
+	public static int copyRows(Sheet srcSheet, int srcRow, Sheet targetSheet, int firstRow, int lastRow, boolean needCopyValue) {
+		if (srcSheet == null || targetSheet == null || srcRow < 0 || firstRow < 0 || lastRow < 0) {
 			return -1;
 		}
 		// 参数传反的处理
@@ -235,22 +235,22 @@ public class PoiUtils {
 		}
 		// 计算复制行合并单元格的起始列位置
 		List<int[]> mergedCells = new ArrayList<int[]>();
-        for (int i = 0; i < sheet.getNumMergedRegions(); i++) {
-            CellRangeAddress cellRangeAddress = sheet.getMergedRegion(i);
+        for (int i = 0; i < srcSheet.getNumMergedRegions(); i++) {
+            CellRangeAddress cellRangeAddress = srcSheet.getMergedRegion(i);
             if (cellRangeAddress.getFirstRow() <= srcRow && cellRangeAddress.getLastRow() >= srcRow) {
             	mergedCells.add(new int[] { cellRangeAddress.getFirstColumn(), cellRangeAddress.getLastColumn() });
             }
         }		
 		// 逐条插入行到指定位置, 如目标行存在，则需连同之后的行一起向下移动一行
-		Row fromRow = sheet.getRow(srcRow);
+		Row fromRow = srcSheet.getRow(srcRow);
 		Row toRow = null;
 		for (int i = firstRow; i <= lastRow; i++) {
-			toRow = sheet.getRow(i);
+			toRow = targetSheet.getRow(i);
 			if (toRow == null) {
-	        	toRow = sheet.createRow(i);
+	        	toRow = targetSheet.createRow(i);
 	        }
-			if (i + 1 <= sheet.getLastRowNum()) {
-				sheet.shiftRows(i + 1, sheet.getLastRowNum(), 1);
+			if (i + 1 <= targetSheet.getLastRowNum()) {
+				targetSheet.shiftRows(i + 1, targetSheet.getLastRowNum(), 1);
 			}
 			// 复制单元格并设置同样的样式、注解、数据等
 			Cell srcCell, tmpCell = null;
@@ -302,7 +302,7 @@ public class PoiUtils {
 			if (mergedCells.size() > 0) {
 				for (int[] columnRegion : mergedCells) {
 					CellRangeAddress newCellRangeAddress = new CellRangeAddress(i, i, columnRegion[0], columnRegion[1]);
-					sheet.addMergedRegion(newCellRangeAddress);
+					targetSheet.addMergedRegion(newCellRangeAddress);
 				}
 			}
 		}
