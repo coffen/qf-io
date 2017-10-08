@@ -182,6 +182,7 @@ public class PoiELModule implements ELModule {
 				type = ElCellType.FORMULA;
 			}
 			else {
+				matcher = REGE_PATTERN.matcher(srcExpr);
 				while (matcher.find()) {
 					String group = matcher.group(0);
 					if (srcExpr.startsWith("#")) {
@@ -223,6 +224,13 @@ public class PoiELModule implements ELModule {
 			exportSheet(elSheet, sheet, bean);
 		}
 		// 清除Sheet模板
+		for (int i = 0; i < sheetCount; i++) {
+			workbook.removeSheetAt(i);
+		}
+		workbook.setActiveSheet(0);		
+		workbook.write(stream);
+		stream.close();
+		stream = null;
 	}
 	
 	private void exportSheet(ElSheet sheetConfig, Sheet moduleSheet, Serializable bean) {
@@ -330,7 +338,7 @@ public class PoiELModule implements ELModule {
 			}
 		}
 		else {
-			PoiUtils.copyRows(moduleSheet, rowIndex, targetSheet, targetRowIndex, targetRowIndex, false);
+			PoiUtils.copyRows(moduleSheet, rowIndex, targetSheet, targetRowIndex, targetRowIndex, true);
 		}
 		return newRowCount;
 	}
@@ -341,10 +349,10 @@ public class PoiELModule implements ELModule {
 			// 图片处理
 			int[] _region = sheetConfig.getMergedRegion(new int[] { elCell.getRowIndex(), elCell.getColumnIndex() });
 			if (_region == null) {
-				_region =  new int[] { targetRow.getRowNum(), targetCell.getColumnIndex(), targetRow.getRowNum(), targetCell.getColumnIndex() };
+				_region =  new int[] { targetRow.getRowNum(), targetCell.getColumnIndex(), targetRow.getRowNum() + 1, targetCell.getColumnIndex() };
 			}
 			else {
-				_region[2] = targetRow.getRowNum() + _region[2] - _region[0];
+				_region[2] = targetRow.getRowNum() + _region[2] - _region[0] + 1;
 				_region[0] = targetRow.getRowNum();
 			}
 			PoiUtils.renderImage(workbook, 0, _region, (byte[])cellVal);

@@ -249,6 +249,7 @@ public class PoiUtils {
 			if (toRow == null) {
 	        	toRow = targetSheet.createRow(i);
 	        }
+			toRow.setHeight(fromRow.getHeight());
 			if (i + 1 <= targetSheet.getLastRowNum()) {
 				targetSheet.shiftRows(i + 1, targetSheet.getLastRowNum(), 1);
 			}
