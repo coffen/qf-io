@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -235,8 +236,9 @@ public class PoiELModule2 implements ELModule {
 			SpelExprParsor parsor = new SpelExprParsor();
 			parsor.setRootVariable(bean);
 			
+			int dynamicRowCount = 0;
 			for (int i = 0; i <= moduleSheet.getLastRowNum(); i++) {
-				exportRow(sheetConfig, i, targetSheet, parsor);
+				dynamicRowCount += exportRow(sheetConfig, dynamicRowCount, i, targetSheet, parsor);
 			}
 		}
 		else {
@@ -244,15 +246,17 @@ public class PoiELModule2 implements ELModule {
 		}
 	}
 	
-	private int exportRow(ElSheet sheetConfig, int rowIndex, Sheet targetSheet, SpelExprParsor parsor) {
+	private int exportRow(ElSheet sheetConfig, int dynamicRowCount, int rowIndex, Sheet targetSheet, SpelExprParsor parsor) {
 		int newRowCount = 0;
+		int targetRowIndex = dynamicRowCount + rowIndex;
 		Sheet moduleSheet = workbook.getSheetAt(sheetConfig.getSheetIndex());
 		Row srcRow = moduleSheet.getRow(rowIndex);
 		if (srcRow == null) {
-			targetSheet.createRow(rowIndex);
+			targetSheet.createRow(targetRowIndex);
+			return newRowCount;
 		}
 		ElRow elRow = sheetConfig.getElRow(rowIndex);
-		if (elRow != null && elRow.getRowIndex() == rowIndex) {
+		if (elRow != null) {
 			List<ElCell> dynamicElCells = elRow.getDynamicElCells();
 			List<ElCell> staticElCells = elRow.getStaticElCells();
 			List<ElCell> formulaElCells = elRow.getFormulaElCells();
@@ -265,47 +269,90 @@ public class PoiELModule2 implements ELModule {
 				int loopCount = parsor.getListObjectSize(listExpr);
 				elRow.setDynamicRowCount(loopCount);
 				if (loopCount > 0) {
-					int insertCount = PoiUtils.copyRows(moduleSheet, rowIndex, targetSheet, rowIndex, rowIndex + loopCount - 1, false);
+					int insertCount = PoiUtils.copyRows(moduleSheet, rowIndex, targetSheet, targetRowIndex, targetRowIndex + loopCount - 1, false);
 					newRowCount = insertCount - 1;
 					// 逐行赋值
-					for (int i = rowIndex; i <= rowIndex + insertCount; i++) {
+					for (int i = targetRowIndex; i <= targetRowIndex + newRowCount; i++) {
 						Row tmpRow = targetSheet.getRow(i);
 						for (ElCell elCell : dynamicElCells) {
 							String cellExpr = elCell.getSrcExpr();
 							// 存储动态表达式单元格的起始坐标（用于公式表达式的解析）
-							if (i == rowIndex) {
+							if (i == targetRowIndex) {
 								String[] _elArr = parsor.getElExpressions(cellExpr, true);
 								if (_elArr != null && _elArr.length > 0) {
-									sheetConfig.putDynamicRegion(_elArr[0], new int[] { rowIndex, rowIndex + insertCount, elCell.getColumnIndex() });
+									sheetConfig.putDynamicRegion(_elArr[0], new int[] { targetRowIndex, targetRowIndex + newRowCount, elCell.getColumnIndex() });
 								}
 							}
-							cellExpr = cellExpr.replace("[?]", "[" + String.valueOf(i - rowIndex) + "]");
+							cellExpr = cellExpr.replace("[?]", "[" + String.valueOf(i - targetRowIndex) + "]");
 							Object _cellVal = parsor.getValue(cellExpr);
-							Cell _cell = tmpRow.getCell(elCell.getColumnIndex());
-							if (_cellVal instanceof byte[]) {
-								// 图片处理
-								int[] _region = sheetConfig.getMergedRegion(new int[] { elCell.getRowIndex(), elCell.getColumnIndex() });
-								if (_region == null) {
-									_region =  new int[] { _cell.getRowIndex(), _cell.getColumnIndex(), _cell.getRowIndex() + 1, _cell.getColumnIndex() + 1 };
-								}
-								PoiUtils.renderImage(workbook, 0, _region, (byte[])_cellVal);
+							renderCell(sheetConfig, elCell, tmpRow, _cellVal);
+						}
+						if (CollectionUtils.isNotEmpty(staticElCells)) {
+							for (ElCell elCell : staticElCells) {
+								String cellExpr = elCell.getSrcExpr();
+								Object _cellVal = parsor.getValue(cellExpr);
+								renderCell(sheetConfig, elCell, tmpRow, _cellVal);
 							}
-							else if (_cellVal != null) {
-								PoiUtils.assignValue(_cell, _cellVal);
-							}
-						}						
+						}
 					}					
 				}
 				else {
-					
+					targetSheet.createRow(targetRowIndex);
 				}
 			}
 			else {
-				
+				PoiUtils.copyRows(moduleSheet, rowIndex, targetSheet, targetRowIndex, targetRowIndex, false);
+				Row tmpRow = targetSheet.getRow(targetRowIndex);
+				if (CollectionUtils.isNotEmpty(staticElCells)) {
+					for (ElCell elCell : staticElCells) {
+						String cellExpr = elCell.getSrcExpr();
+						Object _cellVal = parsor.getValue(cellExpr);
+						renderCell(sheetConfig, elCell, tmpRow, _cellVal);
+					}
+				}
+				if (CollectionUtils.isNotEmpty(formulaElCells)) {
+					for (ElCell elCell : formulaElCells) {
+						String cellExpr = elCell.getSrcExpr();
+						String[] _elArr = parsor.getElExpressions(cellExpr, true);
+						String cellFormula = null;
+						if (_elArr != null && _elArr.length >= 0) {
+							int[] dynamicRegion = sheetConfig.getDynamicRegion(_elArr[0]);
+							if (dynamicRegion != null) {
+								String columnName = PoiUtils.translateColumnIndex2Name(dynamicRegion[2]);
+								cellFormula = cellExpr.replace("#{" + _elArr[0] + "}", columnName + dynamicRegion[0] + ":" + columnName + dynamicRegion[1]);
+							}
+						}
+						Cell targetCell = tmpRow.getCell(elCell.getColumnIndex());
+						targetCell.setCellValue("");
+						if (StringUtils.isNotBlank(cellFormula)) {
+							targetCell.setCellFormula(cellFormula);
+						}
+					}
+				}
 			}
 		}
 		else {
-			PoiUtils.copyRows(moduleSheet, rowIndex, targetSheet, rowIndex, rowIndex, false);
+			PoiUtils.copyRows(moduleSheet, rowIndex, targetSheet, targetRowIndex, targetRowIndex, false);
+		}
+		return newRowCount;
+	}
+	
+	private void renderCell(ElSheet sheetConfig, ElCell elCell, Row targetRow, Object cellVal) {
+		Cell targetCell = targetRow.getCell(elCell.getColumnIndex());
+		if (cellVal instanceof byte[]) {
+			// 图片处理
+			int[] _region = sheetConfig.getMergedRegion(new int[] { elCell.getRowIndex(), elCell.getColumnIndex() });
+			if (_region == null) {
+				_region =  new int[] { targetRow.getRowNum(), targetCell.getColumnIndex(), targetRow.getRowNum(), targetCell.getColumnIndex() };
+			}
+			else {
+				_region[2] = targetRow.getRowNum() + _region[2] - _region[0];
+				_region[0] = targetRow.getRowNum();
+			}
+			PoiUtils.renderImage(workbook, 0, _region, (byte[])cellVal);
+		}
+		else if (cellVal != null) {
+			PoiUtils.assignValue(targetCell, cellVal);
 		}
 	}
 	
