@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.qf.io.FileErrorException;
+import com.qf.io.ModuleParseException;
 import com.qf.io.excel.DataFetcher;
 import com.qf.io.excel.ExcelFileFormat;
 import com.qf.io.excel.UnsupportedExcelDataException;
@@ -58,7 +59,7 @@ public class ExcelWriter {
 	 * @param modulePath  	导出模板
 	 * @param stream  		输出流
 	 */
-	public static void write(LinkedHashMap<String, String> titles, List<Map<String, ?>> data, String modulePath, OutputStream stream) throws UnsupportedExcelDataException, FileErrorException, FileNotFoundException, IOException {
+	public static void write(LinkedHashMap<String, String> titles, List<Map<String, ?>> data, String modulePath, OutputStream stream) throws UnsupportedExcelDataException, ModuleParseException, IOException {
 		if (titles == null || titles.size() == 0 || data == null || StringUtils.isBlank(modulePath) || stream == null) {
 			throw new UnsupportedExcelDataException(UnsupportedExcelDataException.ILLEGAL_PARAMS);
 		}
@@ -89,7 +90,7 @@ public class ExcelWriter {
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	public static void write(String modulePath, OutputStream stream, Serializable... beans) throws UnsupportedExcelDataException, FileErrorException, FileNotFoundException, IOException {
+	public static void write(String modulePath, OutputStream stream, Serializable... beans) throws UnsupportedExcelDataException, ModuleParseException, IOException {
 		if (beans == null || StringUtils.isBlank(modulePath) || stream == null) {
 			throw new UnsupportedExcelDataException(UnsupportedExcelDataException.ILLEGAL_PARAMS);
 		}
@@ -122,7 +123,7 @@ public class ExcelWriter {
 	 * @throws FileErrorException
 	 * @throws IOException
 	 */
-	private static ListDataModule getListDataModule(String modulePath) throws FileNotFoundException, FileErrorException, IOException {
+	private static ListDataModule getListDataModule(String modulePath) throws ModuleParseException, IOException {
 		return new PoiListDataModule(modulePath);
 	}
 	
@@ -135,7 +136,7 @@ public class ExcelWriter {
 	 * @throws FileErrorException
 	 * @throws IOException
 	 */
-	private static ELModule getELModule(String modulePath) throws FileNotFoundException, FileErrorException, IOException {
+	private static ELModule getELModule(String modulePath) throws  ModuleParseException, IOException {
 		return new PoiELModule(modulePath);
 	}
 	

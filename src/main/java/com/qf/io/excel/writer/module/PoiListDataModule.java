@@ -2,13 +2,13 @@ package com.qf.io.excel.writer.module;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -20,7 +20,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-import com.qf.io.FileErrorException;
+import com.qf.io.ModuleParseException;
 import com.qf.io.excel.ExcelFileFormat;
 import com.qf.io.excel.PoiUtils;
 import com.qf.io.excel.writer.ListDataModule;
@@ -62,7 +62,9 @@ public class PoiListDataModule implements ListDataModule {
 	
 	private	boolean hideHeader = false;	// 是否隐藏表头
 	
-	public PoiListDataModule(String path) throws FileNotFoundException, FileErrorException, IOException {
+	private ReentrantLock lock = new ReentrantLock();
+	
+	public PoiListDataModule(String path) throws ModuleParseException, IOException {
 		this.modulePath = path;
 		
 		init();
@@ -100,12 +102,32 @@ public class PoiListDataModule implements ListDataModule {
 		return hideHeader;
 	}
 	
-	private void init() throws FileErrorException, IOException {
-		parse();
+	private void init() throws IOException, ModuleParseException {
+		if (hasInitialized) {
+			return;
+		}
+		
+		if (lock.tryLock()) {
+			if (!hasInitialized) {
+				try {
+					parse();
+					hasInitialized = true;
+				}
+				catch (ModuleParseException | IOException e) {
+					throw e;
+				}
+				finally {
+					lock.unlock();
+				}
+			}
+			else {
+				lock.unlock();
+			}
+		}
 	}
 	
 	@Override
-	public void parse() throws FileErrorException, IOException {
+	public void parse() throws ModuleParseException, IOException {
 		if (hasInitialized) {
 			return;
 		}
@@ -276,17 +298,17 @@ public class PoiListDataModule implements ListDataModule {
 	/**
 	 * 加载模板文件
 	 */
-	private void loadModule() throws FileNotFoundException, FileErrorException, IOException {
+	private void loadModule() throws ModuleParseException, IOException {
 		File file = new File(modulePath);
 		if (!file.exists() || !file.isFile()) {
-			throw new FileNotFoundException();
+			throw new IOException();
 		}
 		String ext = FilenameUtils.getExtension(modulePath);
 		try {
 			format = ExcelFileFormat.valueOf(ext.toUpperCase());
 		}
 		catch (Exception e) {
-			throw new FileErrorException(ext, FileErrorException.FILE_EXTENSION_ERROR);
+			throw new ModuleParseException(e, "模板格式错误");
 		}
 		boolean isXls = format == ExcelFileFormat.XLS;
 		workbook = isXls ? new HSSFWorkbook(new FileInputStream(modulePath)) : new XSSFWorkbook(new FileInputStream(modulePath));

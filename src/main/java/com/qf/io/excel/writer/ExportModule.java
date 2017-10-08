@@ -32,7 +32,7 @@ public interface ExportModule {
 	 * @throws FileErrorException
 	 * @throws IOException
 	 */
-	public void parse() throws FileErrorException, IOException, ModuleParseException;
+	public void parse() throws IOException, ModuleParseException;
 	
 	/**
 	 * 获取模板文件的格式

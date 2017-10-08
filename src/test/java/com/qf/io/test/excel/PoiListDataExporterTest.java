@@ -14,7 +14,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.qf.io.FileErrorException;
+import com.qf.io.ModuleParseException;
 import com.qf.io.excel.writer.module.PoiListDataModule;
 
 /**
@@ -42,7 +42,7 @@ public class PoiListDataExporterTest {
 	private final String path = Thread.currentThread().getContextClassLoader().getResource("").getPath();
 	
 	@Test
-	public void export() throws IOException, FileErrorException {
+	public void export() throws IOException, ModuleParseException {
 		String filename = "listDataModule.xlsx";
 		PoiListDataModule module = new PoiListDataModule(path + filename);
 		

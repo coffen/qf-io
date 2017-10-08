@@ -16,7 +16,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.qf.io.FileErrorException;
+import com.qf.io.ModuleParseException;
 import com.qf.io.excel.writer.module.PoiELModule;
 
 /**
@@ -44,7 +44,7 @@ public class PoiELExporterTest {
 	private final String path = Thread.currentThread().getContextClassLoader().getResource("").getPath();
 	
 	@Test
-	public void export() throws IOException, FileErrorException {
+	public void export() throws IOException, ModuleParseException {
 		String filename = "elModule.xlsx";		
 		PoiELModule module = new PoiELModule(path + filename);
 		
@@ -143,7 +143,7 @@ public class PoiELExporterTest {
 		
 		log.error("导出开始...");
 		
-		module.export(bean, os);
+		module.export(os, bean);
 		
 		log.error("导出完成.");
 	}
