@@ -116,9 +116,15 @@ public class SpelExprParsor {
 					return obj;
 				}
 				if (obj instanceof Number) {
+					if (group.equals(expression)) {
+						return obj;
+					}
 					fragment = obj.toString();
 				} 
 				if (obj instanceof BigDecimal) {
+					if (group.equals(expression)) {
+						return obj;
+					}
 					fragment = ((BigDecimal) obj).toEngineeringString();
 				} 
 				else if (obj instanceof String) {

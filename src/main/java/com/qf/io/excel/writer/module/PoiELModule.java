@@ -144,6 +144,7 @@ public class PoiELModule implements ELModule {
 		if (row != null) {
 			Cell cell = null;
 			Point point = null;
+			elRow = new ElRow(row.getRowNum());
 			for (int i = 0; i < row.getLastCellNum(); i++) {
 				cell = row.getCell(i);
 				if (cell == null) {
@@ -151,10 +152,7 @@ public class PoiELModule implements ELModule {
 				}
 				ElCell elCell = parseCell(cell);
 				if (elCell == null) {
-					continue;
-				}
-				if (elRow == null) {
-					elRow = new ElRow(row.getRowNum());
+					elCell = new ElCell(cell.getRowIndex(), cell.getColumnIndex(), cell.getStringCellValue(), ElCellType.NONE_EL);
 				}
 				elRow.addElCell(elCell);
 				point = new Point(cell.getRowIndex(), cell.getColumnIndex());
@@ -165,6 +163,9 @@ public class PoiELModule implements ELModule {
 						break;
 					}
 				}
+			}
+			if (!elRow.hasElCell()) {
+				elRow = null;
 			}
 		}
 		return elRow;
@@ -267,6 +268,8 @@ public class PoiELModule implements ELModule {
 			List<ElCell> staticElCells = elRow.getStaticElCells();
 			List<ElCell> formulaElCells = elRow.getFormulaElCells();
 			
+			List<ElCell> noneElCells = elRow.getNoneElCells();
+			
 			if (CollectionUtils.isNotEmpty(dynamicElCells)) {
 				ElCell firstDynamicElCell = dynamicElCells.get(0);
 				// 首个单元格的表达式（计算动态行长度）
@@ -293,6 +296,11 @@ public class PoiELModule implements ELModule {
 							Object _cellVal = parsor.getValue(cellExpr);
 							renderCell(sheetConfig, elCell, targetSheet, tmpRow, _cellVal);
 						}
+						if (CollectionUtils.isNotEmpty(noneElCells)) {
+							for (ElCell elCell : noneElCells) {
+								renderCell(sheetConfig, elCell, targetSheet, tmpRow, elCell.getSrcExpr());
+							}
+						}
 						if (CollectionUtils.isNotEmpty(staticElCells)) {
 							for (ElCell elCell : staticElCells) {
 								String cellExpr = elCell.getSrcExpr();
@@ -309,6 +317,11 @@ public class PoiELModule implements ELModule {
 			else {
 				PoiUtils.copyRows(moduleSheet, rowIndex, targetSheet, targetRowIndex, targetRowIndex, false);
 				Row tmpRow = targetSheet.getRow(targetRowIndex);
+				if (CollectionUtils.isNotEmpty(noneElCells)) {
+					for (ElCell elCell : noneElCells) {
+						renderCell(sheetConfig, elCell, targetSheet, tmpRow, elCell.getSrcExpr());
+					}
+				}
 				if (CollectionUtils.isNotEmpty(staticElCells)) {
 					for (ElCell elCell : staticElCells) {
 						String cellExpr = elCell.getSrcExpr();
@@ -325,7 +338,9 @@ public class PoiELModule implements ELModule {
 							int[] dynamicRegion = sheetConfig.getDynamicRegion(_elArr[0]);
 							if (dynamicRegion != null) {
 								String columnName = PoiUtils.translateColumnIndex2Name(dynamicRegion[2]);
-								cellFormula = cellExpr.replace("#{" + _elArr[0] + "}", columnName + dynamicRegion[0] + ":" + columnName + dynamicRegion[1]);
+								int startRowNum = dynamicRegion[0] + 1;
+								int endRowNum = dynamicRegion[1] + 1;
+								cellFormula = cellExpr.replace("#{" + _elArr[0] + "}", "SUM(" + columnName + startRowNum + ":" + columnName + endRowNum + ")");
 							}
 						}
 						Cell targetCell = tmpRow.getCell(elCell.getColumnIndex());

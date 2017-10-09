@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -125,8 +126,9 @@ public class ElModuleConfig {
 	static class ElRow {
 		
 		int rowIndex;			// 行索引
-		int dynamicRowCount;	// 动态行长度
+		int dynamicRowCount;	// 动态行长度		
 		
+		List<ElCell> noneElCells = new ArrayList<ElCell>();		// 非表达式列表
 		List<ElCell> staticElCells = new ArrayList<ElCell>();	// 静态表达式列表
 		List<ElCell> dynamicElCells = new ArrayList<ElCell>();	// 动态表达式列表
 		List<ElCell> formulaElCells = new ArrayList<ElCell>();	// 公式表达式列表
@@ -145,6 +147,10 @@ public class ElModuleConfig {
 		
 		public void setDynamicRowCount(int dynamicRowCount) {
 			this.dynamicRowCount = dynamicRowCount;
+		}
+		
+		public List<ElCell> getNoneElCells() {
+			return Collections.unmodifiableList(noneElCells);
 		}
 		
 		List<ElCell> getStaticElCells() {
@@ -169,9 +175,16 @@ public class ElModuleConfig {
 			else if (cell.getType() == ElCellType.FORMULA) {
 				formulaElCells.add(cell);
 			}
-			else {
+			else if (cell.getType() == ElCellType.STATIC) {
 				staticElCells.add(cell);
 			}
+			else {
+				noneElCells.add(cell);
+			}
+		}
+		
+		boolean hasElCell() {
+			return CollectionUtils.isNotEmpty(dynamicElCells) || CollectionUtils.isNotEmpty(staticElCells) || CollectionUtils.isNotEmpty(formulaElCells);
 		}
 		
 	}
@@ -212,7 +225,7 @@ public class ElModuleConfig {
 	
 	public static enum ElCellType {
 		
-		STATIC, DYNAMIC, FORMULA;
+		NONE_EL, STATIC, DYNAMIC, FORMULA;
 		
 	}
 

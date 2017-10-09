@@ -1,5 +1,6 @@
 package com.qf.io.excel;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -362,6 +363,9 @@ public class PoiUtils {
 		} 
 		else if (value instanceof Double) {
 			cell.setCellValue((Double)value);
+		} 
+		else if (value instanceof BigDecimal) {
+			cell.setCellValue(((BigDecimal)value).doubleValue());
 		} 
 		else if (value instanceof Date) {
 			cell.setCellValue(new DateTime((Date)value).toString("yyyy-MM-dd"));
