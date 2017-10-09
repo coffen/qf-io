@@ -59,7 +59,7 @@ public class ElModuleConfig {
 		 * 格式：Map<int[rowIndex, columnIndex], int[startRowIndex, startColumnIndex, endRowIndex, endColumnIndex]>
 		 * 当表达式单元格是一个合并单元格式, 记录其区域范围
 		 */
-		Map<int[], int[]> mergedRegionMap = new HashMap<int[], int[]>();
+		Map<Point, int[]> mergedRegionMap = new HashMap<Point, int[]>();
 		
 		/**
 		 * <p>动态单元格区域映射表</p>
@@ -98,14 +98,14 @@ public class ElModuleConfig {
 			mergedCells.add(region);
 		}
 		
-		public void putMergedRegion(int[] point, int[] region) {
+		public void putMergedRegion(Point point, int[] region) {
 			if (point == null || region == null || region.length != 4) {
 				return;
 			}
 			mergedRegionMap.put(point, region);
 		}
 		
-		public int[] getMergedRegion(int[] point) {
+		public int[] getMergedRegion(Point point) {
 			return mergedRegionMap.get(point);
 		}
 		

@@ -143,7 +143,7 @@ public class PoiELModule implements ELModule {
 		ElRow elRow = null;
 		if (row != null) {
 			Cell cell = null;
-			int[] point = null;
+			Point point = null;
 			for (int i = 0; i < row.getLastCellNum(); i++) {
 				cell = row.getCell(i);
 				if (cell == null) {
@@ -157,10 +157,10 @@ public class PoiELModule implements ELModule {
 					elRow = new ElRow(row.getRowNum());
 				}
 				elRow.addElCell(elCell);
-				point = new int[] { cell.getRowIndex(), cell.getColumnIndex() };
+				point = new Point(cell.getRowIndex(), cell.getColumnIndex());
 				// 建立合并单元格的映射关系
 				for (int[] mCell : sheet.getMergedCells()) {
-					if (point[0] >= mCell[0] && point[0] <= mCell[2] && point[1] >= mCell[1] && point[1] <= mCell[3]) {
+					if (point.getX() >= mCell[0] && point.getX() <= mCell[2] && point.getY() >= mCell[1] && point.getY() <= mCell[3]) {
 						sheet.putMergedRegion(point, mCell);
 						break;
 					}
@@ -291,13 +291,13 @@ public class PoiELModule implements ELModule {
 							}
 							cellExpr = cellExpr.replace("[?]", "[" + String.valueOf(i - targetRowIndex) + "]");
 							Object _cellVal = parsor.getValue(cellExpr);
-							renderCell(sheetConfig, elCell, tmpRow, _cellVal);
+							renderCell(sheetConfig, elCell, targetSheet, tmpRow, _cellVal);
 						}
 						if (CollectionUtils.isNotEmpty(staticElCells)) {
 							for (ElCell elCell : staticElCells) {
 								String cellExpr = elCell.getSrcExpr();
 								Object _cellVal = parsor.getValue(cellExpr);
-								renderCell(sheetConfig, elCell, tmpRow, _cellVal);
+								renderCell(sheetConfig, elCell, targetSheet, tmpRow, _cellVal);
 							}
 						}
 					}					
@@ -313,7 +313,7 @@ public class PoiELModule implements ELModule {
 					for (ElCell elCell : staticElCells) {
 						String cellExpr = elCell.getSrcExpr();
 						Object _cellVal = parsor.getValue(cellExpr);
-						renderCell(sheetConfig, elCell, tmpRow, _cellVal);
+						renderCell(sheetConfig, elCell, targetSheet, tmpRow, _cellVal);
 					}
 				}
 				if (CollectionUtils.isNotEmpty(formulaElCells)) {
@@ -343,19 +343,21 @@ public class PoiELModule implements ELModule {
 		return newRowCount;
 	}
 	
-	private void renderCell(ElSheet sheetConfig, ElCell elCell, Row targetRow, Object cellVal) {
+	// 渲染单元格
+	private void renderCell(ElSheet sheetConfig, ElCell elCell, Sheet targetSheet, Row targetRow, Object cellVal) {
 		Cell targetCell = targetRow.getCell(elCell.getColumnIndex());
 		if (cellVal instanceof byte[]) {
 			// 图片处理
-			int[] _region = sheetConfig.getMergedRegion(new int[] { elCell.getRowIndex(), elCell.getColumnIndex() });
+			int[] _region = sheetConfig.getMergedRegion(new Point(elCell.getRowIndex(), elCell.getColumnIndex()));
 			if (_region == null) {
-				_region =  new int[] { targetRow.getRowNum(), targetCell.getColumnIndex(), targetRow.getRowNum() + 1, targetCell.getColumnIndex() };
+				_region =  new int[] { targetRow.getRowNum(), targetCell.getColumnIndex(), targetRow.getRowNum() + 1, targetCell.getColumnIndex() + 1 };
 			}
 			else {
-				_region[2] = targetRow.getRowNum() + _region[2] - _region[0] + 1;
+				_region[2] = targetRow.getRowNum() + _region[2] - _region[0];
+				_region[3] = _region[3] + 1;
 				_region[0] = targetRow.getRowNum();
 			}
-			PoiUtils.renderImage(workbook, 0, _region, (byte[])cellVal);
+			PoiUtils.renderImage(workbook, sheetConfig.getSheetIndex() + 1, _region, (byte[])cellVal);
 		}
 		else if (cellVal != null) {
 			PoiUtils.assignValue(targetCell, cellVal);
